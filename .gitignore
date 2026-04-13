@@ -1,0 +1,35 @@
+# Python runtime artifacts
+__pycache__/
+*.pyc
+*.pyo
+.ipynb_checkpoints/
+
+# Virtual environments
+venv/
+.venv/
+
+# macOS
+.DS_Store
+
+# IDE / editor
+.vscode/
+.idea/
+
+# Others
+[Plan] GitHub Upload.md
+
+# Trained models & pickled results (regenerable from code + seed)
+Scenario_JSAC/save_main/
+Scenario_JSAC/save_test/
+Scenario_D2D/saves/
+Scenario_D2D/saves_QoS/
+
+# Keep the PNG plots visible for quick browsing on GitHub
+# (they're small and useful without cloning)
+!Scenario_JSAC/save_main/*.png
+!Scenario_JSAC/save_test/*.png
+
+# Keep the resume_*.py helpers — they live next to the pickles
+!Scenario_JSAC/save_main/*.py
+!Scenario_JSAC/save_test/*.py
+!Scenario_D2D/save_test/*.py
