@@ -16,7 +16,7 @@ venv/
 .idea/
 
 # Others
-[Plan] GitHub Upload.md
+\[Plan\] GitHub Upload.md
 
 # Trained models & pickled results (regenerable from code + seed)
 Scenario_JSAC/save_main/
