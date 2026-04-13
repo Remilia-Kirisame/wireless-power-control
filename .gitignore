@@ -19,17 +19,18 @@ venv/
 \[Plan\] GitHub Upload.md
 
 # Trained models & pickled results (regenerable from code + seed)
-Scenario_JSAC/save_main/
-Scenario_JSAC/save_test/
-Scenario_D2D/saves/
-Scenario_D2D/saves_QoS/
+# First, ignore the contents of these directories but NOT the directories themselves
+Scenario_JSAC/save_main/*
+Scenario_JSAC/save_test/*
+Scenario_D2D/saves/*
+Scenario_D2D/saves_QoS/*
 
-# Keep the PNG plots visible for quick browsing on GitHub
-# (they're small and useful without cloning)
+# Exclude specific file types from the ignore rule above
 !Scenario_JSAC/save_main/*.png
-!Scenario_JSAC/save_test/*.png
-
-# Keep the resume_*.py helpers — they live next to the pickles
 !Scenario_JSAC/save_main/*.py
+!Scenario_JSAC/save_test/*.png
 !Scenario_JSAC/save_test/*.py
-!Scenario_D2D/save_test/*.py
+!Scenario_D2D/saves/*.png
+!Scenario_D2D/saves/*.py
+!Scenario_D2D/saves_QoS/*.png
+!Scenario_D2D/saves_QoS/*.py
