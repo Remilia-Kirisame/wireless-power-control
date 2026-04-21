@@ -1,0 +1,201 @@
+/* sandbox/styles.css
+ * "Clean academic poster" vibe — muted palette, generous margins,
+ * serif headings, sans body, figures lead the narrative.
+ */
+
+:root {
+    --ink: #1c1c1c;
+    --ink-soft: #4a4a4a;
+    --ink-faint: #8a8a8a;
+    --rule: #d9d4c8;
+    --paper: #f7f3ea;
+    --panel: #fdfcf7;
+
+    --blue:   #2196f3;  /* WMMSE / Blue cars */
+    --orange: #ff5722;  /* GNN */
+    --yellow: #f6c445;  /* Yellow (sensing) */
+    --green:  #4caf50;  /* Green (comm) */
+    --grey:   #888888;  /* Naive */
+
+    --serif: "Charter", "Iowan Old Style", Georgia, "Times New Roman", serif;
+    --sans:  "Inter", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
+    --mono:  "JetBrains Mono", "SF Mono", Menlo, monospace;
+
+    --max-read: 680px;
+    --max-figure: 900px;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 16px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+}
+
+#app {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 72px 40px 96px;
+}
+
+/* ----- Header ----- */
+
+.poster-header {
+    border-bottom: 1px solid var(--rule);
+    padding-bottom: 40px;
+    margin-bottom: 56px;
+}
+
+.eyebrow {
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    margin: 0 0 20px;
+}
+
+.poster-header h1 {
+    font-family: var(--serif);
+    font-weight: 500;
+    font-size: clamp(32px, 4.4vw, 48px);
+    line-height: 1.15;
+    letter-spacing: -0.01em;
+    margin: 0 0 24px;
+    max-width: var(--max-figure);
+}
+
+.byline {
+    font-family: var(--serif);
+    font-size: 19px;
+    color: var(--ink-soft);
+    max-width: var(--max-read);
+    margin: 0;
+}
+
+.byline abbr {
+    border-bottom: 1px dotted var(--ink-faint);
+    cursor: help;
+    text-decoration: none;
+}
+
+/* ----- Panels ----- */
+
+.panel {
+    margin-bottom: 64px;
+}
+
+.panel h2 {
+    font-family: var(--serif);
+    font-weight: 500;
+    font-size: 26px;
+    letter-spacing: -0.005em;
+    margin: 0 0 18px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--rule);
+}
+
+.panel p {
+    max-width: var(--max-read);
+    color: var(--ink-soft);
+    margin: 0 0 28px;
+}
+
+.panel code {
+    font-family: var(--mono);
+    font-size: 0.88em;
+    padding: 1px 5px;
+    background: var(--panel);
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+}
+
+/* ----- Figures ----- */
+
+.figure {
+    margin: 0 0 20px;
+    max-width: var(--max-figure);
+}
+
+.figure-frame {
+    background: var(--panel);
+    border: 1px solid var(--rule);
+    padding: 20px;
+}
+
+.figure-frame--chart {
+    padding: 24px 28px;
+}
+
+.figure-frame svg {
+    display: block;
+    width: 100%;
+    height: auto;
+}
+
+figcaption {
+    font-family: var(--serif);
+    font-size: 14px;
+    font-style: italic;
+    color: var(--ink-soft);
+    padding-top: 10px;
+    max-width: var(--max-read);
+}
+
+/* ----- Legend ----- */
+
+.legend {
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: 0.06em;
+    color: var(--ink-soft);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 22px;
+    align-items: center;
+    margin-top: 14px;
+}
+
+.swatch {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border-radius: 2px;
+    margin-right: 6px;
+    vertical-align: -2px;
+}
+
+.swatch--naive { background: var(--grey);   }
+.swatch--wmmse { background: var(--blue);   }
+.swatch--gnn   { background: var(--orange); }
+
+/* ----- Footer ----- */
+
+.poster-footer {
+    border-top: 1px solid var(--rule);
+    padding-top: 24px;
+    margin-top: 80px;
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: 0.06em;
+    color: var(--ink-faint);
+}
+
+.poster-footer p { margin: 0; }
+
+/* ----- Small screens ----- */
+
+@media (max-width: 640px) {
+    #app { padding: 48px 22px 64px; }
+    .poster-header { padding-bottom: 28px; margin-bottom: 40px; }
+    .panel { margin-bottom: 48px; }
+}
