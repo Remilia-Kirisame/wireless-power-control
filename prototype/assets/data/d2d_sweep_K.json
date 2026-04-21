@@ -1,0 +1,112 @@
+{
+  "sweep": "K",
+  "x_key": "K",
+  "x_label": "Number of transceiver pairs (K)",
+  "methods": [
+    "WMMSE",
+    "GNN",
+    "DNN"
+  ],
+  "points": [
+    {
+      "x": 5,
+      "metrics": {
+        "WMMSE": {
+          "sum_rate": 70.401,
+          "sum_rate_ratio_vs_wmmse": 1.0,
+          "inference_ms": 8.985
+        },
+        "GNN": {
+          "sum_rate": 71.011,
+          "sum_rate_ratio_vs_wmmse": 1.0087,
+          "inference_ms": 3.739
+        },
+        "DNN": {
+          "sum_rate": 70.429,
+          "sum_rate_ratio_vs_wmmse": 1.0004,
+          "inference_ms": 0.204
+        }
+      }
+    },
+    {
+      "x": 10,
+      "metrics": {
+        "WMMSE": {
+          "sum_rate": 116.096,
+          "sum_rate_ratio_vs_wmmse": 1.0,
+          "inference_ms": 18.771
+        },
+        "GNN": {
+          "sum_rate": 116.521,
+          "sum_rate_ratio_vs_wmmse": 1.0037,
+          "inference_ms": 4.177
+        },
+        "DNN": {
+          "sum_rate": 114.283,
+          "sum_rate_ratio_vs_wmmse": 0.9844,
+          "inference_ms": 0.37
+        }
+      }
+    },
+    {
+      "x": 20,
+      "metrics": {
+        "WMMSE": {
+          "sum_rate": 191.582,
+          "sum_rate_ratio_vs_wmmse": 1.0,
+          "inference_ms": 51.667
+        },
+        "GNN": {
+          "sum_rate": 189.859,
+          "sum_rate_ratio_vs_wmmse": 0.991,
+          "inference_ms": 8.829
+        },
+        "DNN": {
+          "sum_rate": 183.949,
+          "sum_rate_ratio_vs_wmmse": 0.9602,
+          "inference_ms": 8.145
+        }
+      }
+    },
+    {
+      "x": 30,
+      "metrics": {
+        "WMMSE": {
+          "sum_rate": 257.592,
+          "sum_rate_ratio_vs_wmmse": 1.0,
+          "inference_ms": 159.752
+        },
+        "GNN": {
+          "sum_rate": 252.983,
+          "sum_rate_ratio_vs_wmmse": 0.9821,
+          "inference_ms": 15.835
+        },
+        "DNN": {
+          "sum_rate": 244.161,
+          "sum_rate_ratio_vs_wmmse": 0.9479,
+          "inference_ms": 12.667
+        }
+      }
+    },
+    {
+      "x": 40,
+      "metrics": {
+        "WMMSE": {
+          "sum_rate": 312.703,
+          "sum_rate_ratio_vs_wmmse": 1.0,
+          "inference_ms": 249.886
+        },
+        "GNN": {
+          "sum_rate": 304.182,
+          "sum_rate_ratio_vs_wmmse": 0.9728,
+          "inference_ms": 32.869
+        },
+        "DNN": {
+          "sum_rate": 290.117,
+          "sum_rate_ratio_vs_wmmse": 0.9278,
+          "inference_ms": 20.314
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,132 @@
+{
+  "sweep": "M",
+  "x_key": "M",
+  "x_label": "Links per Blue car (M = My+Mg)",
+  "methods": [
+    "Naive",
+    "WMMSE",
+    "GNN"
+  ],
+  "points": [
+    {
+      "x": 3,
+      "K": 30,
+      "M_y": 1,
+      "M_g": 2,
+      "label": "(1,2)",
+      "metrics": {
+        "Naive": {
+          "green_sumrate": 79.859,
+          "yellow_violation_pct": 21.7,
+          "inference_ms": 0.022
+        },
+        "WMMSE": {
+          "green_sumrate": 97.289,
+          "yellow_violation_pct": 20.28,
+          "inference_ms": 124.31
+        },
+        "GNN": {
+          "green_sumrate": 94.242,
+          "yellow_violation_pct": 21.86,
+          "inference_ms": 57.576
+        }
+      }
+    },
+    {
+      "x": 5,
+      "K": 50,
+      "M_y": 2,
+      "M_g": 3,
+      "label": "(2,3)",
+      "metrics": {
+        "Naive": {
+          "green_sumrate": 120.108,
+          "yellow_violation_pct": 21.84,
+          "inference_ms": 0.038
+        },
+        "WMMSE": {
+          "green_sumrate": 145.781,
+          "yellow_violation_pct": 20.19,
+          "inference_ms": 292.484
+        },
+        "GNN": {
+          "green_sumrate": 141.715,
+          "yellow_violation_pct": 19.56,
+          "inference_ms": 108.733
+        }
+      }
+    },
+    {
+      "x": 6,
+      "K": 60,
+      "M_y": 2,
+      "M_g": 4,
+      "label": "(2,4)",
+      "metrics": {
+        "Naive": {
+          "green_sumrate": 159.64,
+          "yellow_violation_pct": 21.69,
+          "inference_ms": 0.028
+        },
+        "WMMSE": {
+          "green_sumrate": 194.394,
+          "yellow_violation_pct": 19.41,
+          "inference_ms": 420.224
+        },
+        "GNN": {
+          "green_sumrate": 188.654,
+          "yellow_violation_pct": 19.22,
+          "inference_ms": 128.901
+        }
+      }
+    },
+    {
+      "x": 8,
+      "K": 80,
+      "M_y": 3,
+      "M_g": 5,
+      "label": "(3,5)",
+      "metrics": {
+        "Naive": {
+          "green_sumrate": 197.558,
+          "yellow_violation_pct": 21.8,
+          "inference_ms": 0.035
+        },
+        "WMMSE": {
+          "green_sumrate": 242.371,
+          "yellow_violation_pct": 20.08,
+          "inference_ms": 748.907
+        },
+        "GNN": {
+          "green_sumrate": 234.757,
+          "yellow_violation_pct": 18.727,
+          "inference_ms": 223.393
+        }
+      }
+    },
+    {
+      "x": 10,
+      "K": 100,
+      "M_y": 4,
+      "M_g": 6,
+      "label": "(4,6)",
+      "metrics": {
+        "Naive": {
+          "green_sumrate": 235.872,
+          "yellow_violation_pct": 21.945,
+          "inference_ms": 0.059
+        },
+        "WMMSE": {
+          "green_sumrate": 287.768,
+          "yellow_violation_pct": 20.08,
+          "inference_ms": 2199.287
+        },
+        "GNN": {
+          "green_sumrate": 279.52,
+          "yellow_violation_pct": 18.375,
+          "inference_ms": 414.54
+        }
+      }
+    }
+  ]
+}

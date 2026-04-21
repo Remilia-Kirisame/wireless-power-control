@@ -1,0 +1,50 @@
+{
+  "layouts": [
+    {
+      "id": "01",
+      "config": {
+        "B": 10,
+        "M_y": 2,
+        "M_g": 3,
+        "K": 50,
+        "field": 225.0
+      },
+      "metrics": {
+        "green_sumrate": {
+          "Naive": 121.564,
+          "WMMSE": 149.558,
+          "GNN": 148.075
+        },
+        "yellow_viol_rate": {
+          "Naive": 21.12,
+          "WMMSE": 19.52,
+          "GNN": 18.0
+        }
+      },
+      "path": "layouts/jsac_layout_01.json"
+    },
+    {
+      "id": "02",
+      "config": {
+        "B": 10,
+        "M_y": 2,
+        "M_g": 3,
+        "K": 50,
+        "field": 225.0
+      },
+      "metrics": {
+        "green_sumrate": {
+          "Naive": 121.868,
+          "WMMSE": 137.005,
+          "GNN": 138.509
+        },
+        "yellow_viol_rate": {
+          "Naive": 21.12,
+          "WMMSE": 19.52,
+          "GNN": 18.0
+        }
+      },
+      "path": "layouts/jsac_layout_02.json"
+    }
+  ]
+}

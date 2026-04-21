@@ -1,0 +1,117 @@
+{
+  "sweep": "B",
+  "x_key": "B",
+  "x_label": "Number of Blue cars (B)",
+  "methods": [
+    "Naive",
+    "WMMSE",
+    "GNN"
+  ],
+  "points": [
+    {
+      "x": 3,
+      "K": 15,
+      "metrics": {
+        "Naive": {
+          "green_sumrate": 67.741,
+          "yellow_violation_pct": 6.833,
+          "inference_ms": 0.026
+        },
+        "WMMSE": {
+          "green_sumrate": 76.692,
+          "yellow_violation_pct": 10.5,
+          "inference_ms": 46.084
+        },
+        "GNN": {
+          "green_sumrate": 75.018,
+          "yellow_violation_pct": 6.333,
+          "inference_ms": 20.792
+        }
+      }
+    },
+    {
+      "x": 5,
+      "K": 25,
+      "metrics": {
+        "Naive": {
+          "green_sumrate": 84.402,
+          "yellow_violation_pct": 12.02,
+          "inference_ms": 0.022
+        },
+        "WMMSE": {
+          "green_sumrate": 98.959,
+          "yellow_violation_pct": 13.76,
+          "inference_ms": 98.48
+        },
+        "GNN": {
+          "green_sumrate": 97.122,
+          "yellow_violation_pct": 10.22,
+          "inference_ms": 37.103
+        }
+      }
+    },
+    {
+      "x": 7,
+      "K": 35,
+      "metrics": {
+        "Naive": {
+          "green_sumrate": 100.465,
+          "yellow_violation_pct": 15.571,
+          "inference_ms": 0.025
+        },
+        "WMMSE": {
+          "green_sumrate": 119.529,
+          "yellow_violation_pct": 15.8,
+          "inference_ms": 147.544
+        },
+        "GNN": {
+          "green_sumrate": 117.492,
+          "yellow_violation_pct": 13.471,
+          "inference_ms": 58.473
+        }
+      }
+    },
+    {
+      "x": 10,
+      "K": 50,
+      "metrics": {
+        "Naive": {
+          "green_sumrate": 118.302,
+          "yellow_violation_pct": 21.66,
+          "inference_ms": 0.037
+        },
+        "WMMSE": {
+          "green_sumrate": 144.312,
+          "yellow_violation_pct": 20.51,
+          "inference_ms": 165.644
+        },
+        "GNN": {
+          "green_sumrate": 140.441,
+          "yellow_violation_pct": 19.42,
+          "inference_ms": 102.578
+        }
+      }
+    },
+    {
+      "x": 13,
+      "K": 65,
+      "metrics": {
+        "Naive": {
+          "green_sumrate": 137.161,
+          "yellow_violation_pct": 25.515,
+          "inference_ms": 0.043
+        },
+        "WMMSE": {
+          "green_sumrate": 169.633,
+          "yellow_violation_pct": 22.669,
+          "inference_ms": 511.621
+        },
+        "GNN": {
+          "green_sumrate": 164.098,
+          "yellow_violation_pct": 22.823,
+          "inference_ms": 179.985
+        }
+      }
+    }
+  ]
+}
