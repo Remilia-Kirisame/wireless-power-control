@@ -6,9 +6,12 @@
 
 Capstone project: ML-based wireless power allocation for interference channels. The core objective is to approximate the iterative WMMSE algorithm with neural networks (specifically Graph Neural Networks and Deep Neural Networks) to achieve near-optimal sum-rate performance at a fraction of the computational time during inference.
 
-The repository contains two main scenarios:
-- **Scenario_D2D** (archived): An earlier Device-to-Device scenario with both GNN and DNN implementations, kept for reference purposes.
-- **Scenario_JSAC** (active): A Joint Sensing and Communication (JSAC) scenario using a GNN-only approach. It compares the GNN's performance against WMMSE and a naive equal-power baseline.
+The work proceeds in two scenarios that together form a single narrative:
+
+- **Scenario_D2D — Foundation.** A Device-to-Device / interference-channel setup where we built and compared **both a DNN (MLP) and a GNN (IGCNet)** against the iterative WMMSE baseline. A central finding: **the DNN's approximation quality degrades as the problem size K grows**, while the GNN's stays close to WMMSE — because the GNN's weight-sharing and node-count-agnostic message passing scale naturally with K, whereas the MLP's fixed input/output dimensionality does not. This is what motivated the move to GNN-only for the next scenario. A later extension adds a minimum-rate QoS constraint per user (`test_QoS.py`).
+- **Scenario_JSAC — Application.** The GNN approach is applied to a richer **Joint Sensing and Communication** setting over vehicular links: Blue-car transmitters serve Yellow (sensing) and Green (communication) receivers on orthogonal channels inside each cluster, with same-channel interference across clusters. The problem adds a **hard per-Blue-car power budget** (enforced by construction via per-group softmax) and a **soft Yellow-SINR constraint** (squared-hinge penalty). The GNN is trained unsupervised against the sum-rate loss and compared to WMMSE and a naive equal-power baseline.
+
+Both scenarios are first-class deliverables of the capstone. D2D produced the scaling result that justifies the method; JSAC demonstrates that the same architecture handles a constrained, structured problem.
 
 ---
 
