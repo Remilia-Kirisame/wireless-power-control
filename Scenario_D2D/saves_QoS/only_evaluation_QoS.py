@@ -110,7 +110,7 @@ def evaluate_and_plot(k_size=50, test_layouts=1000, R_MIN=0.5):
         'metrics_QoS': metrics_QoS,
         'metrics_QoS_anneal': metrics_QoS_anneal,
         'R_MIN': R_MIN
-    })
+    }, save_dir=SAVE_DIR)
 
 if __name__ == "__main__":
     evaluate_and_plot(k_size=50, test_layouts=500, R_MIN=0.5)

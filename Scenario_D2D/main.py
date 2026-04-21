@@ -257,7 +257,7 @@ def run_main():
     # -------------------------------------------------------------------------
     # Phase 4: Plotting
     # -------------------------------------------------------------------------
-    Sapo.plot_results(results)
+    Sapo.plot_results(results, save_dir=SAVE_DIR if ENABLE_SAVING else None)
 
 if __name__ == "__main__":
     run_main()

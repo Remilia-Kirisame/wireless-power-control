@@ -18,7 +18,7 @@ def run_plot_only():
         
     print("Generating plots...")
     # Calls the exact same plotting function from your Phase 4
-    Sapo.plot_results(results)
+    Sapo.plot_results(results, save_dir=None)
 
 if __name__ == "__main__":
     run_plot_only()

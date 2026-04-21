@@ -4,6 +4,8 @@
 #              Includes data generation, normalization, and plotting.
 # ==============================================================================
 
+import os
+
 import numpy as np
 import torch
 import matplotlib.pyplot as plt
@@ -156,10 +158,10 @@ def train_specialized_dnn(K, train_layouts, loss_scaler, dnn_config, device, den
 # =============================================================================
 # 4. Helper Function: Plotting
 # =============================================================================
-def plot_results(res):
-    """Helper to plot results at the end."""
+def plot_results(res, save_dir=None):
+    """Helper to plot results at the end. If save_dir is given, writes PNGs there."""
     # Sum Rate Plot
-    plt.figure()
+    fig_sr = plt.figure()
     plt.plot(res['K'], res['FPLinQ'], marker='o', label='FPLinQ')
     plt.plot(res['K'], res['WMMSE'],  marker='^', label='WMMSE')
     plt.plot(res['K'], res['Greedy'], marker='s', label='Greedy')
@@ -170,9 +172,11 @@ def plot_results(res):
     plt.title('Algorithm Comparison')
     plt.legend()
     plt.grid(True, linestyle='--', alpha=0.4)
-    
+    if save_dir is not None:
+        fig_sr.savefig(os.path.join(save_dir, 'd2d_sumrate.png'), dpi=130, bbox_inches='tight')
+
     # Time Plot
-    plt.figure()
+    fig_time = plt.figure()
     plt.semilogy(res['K'], res['Time_FPL'], marker='o', label='FPLinQ')
     plt.semilogy(res['K'], res['Time_WMM'], marker='^', label='WMMSE')
     plt.semilogy(res['K'], res['Time_Grd'], marker='s', label='Greedy')
@@ -184,6 +188,8 @@ def plot_results(res):
     plt.legend()
     plt.grid(True, linestyle='--', alpha=0.4)
     plt.tight_layout()
+    if save_dir is not None:
+        fig_time.savefig(os.path.join(save_dir, 'd2d_time.png'), dpi=130, bbox_inches='tight')
     plt.show()
 
 
@@ -213,8 +219,8 @@ def print_qos_metrics(results):
     print("="*100)
 
 
-def plot_qos_cdf(results):
-    """Plots the CDF of user data rates from QoS results."""
+def plot_qos_cdf(results, save_dir=None):
+    """Plots the CDF of user data rates from QoS results. If save_dir is given, writes PNG there."""
     metrics_wm = results['metrics_wm']
     metrics_wm_qos = results['metrics_wm_qos']
     metrics_old = results['metrics_old']
@@ -247,4 +253,6 @@ def plot_qos_cdf(results):
     plt.legend()
     plt.grid(True, alpha=0.3)
     plt.tight_layout()
+    if save_dir is not None:
+        plt.savefig(os.path.join(save_dir, 'qos_cdf.png'), dpi=130, bbox_inches='tight')
     plt.show()

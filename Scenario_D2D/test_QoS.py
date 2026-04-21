@@ -210,7 +210,7 @@ def run_test():
     # --- Phase 4: Reporting ---
     Sapo.print_qos_metrics(qos_results)
     # --- Plotting CDF ---
-    Sapo.plot_qos_cdf(qos_results)
+    Sapo.plot_qos_cdf(qos_results, save_dir=SAVE_DIR if ENABLE_SAVING else None)
 
 if __name__ == "__main__":
     run_test()

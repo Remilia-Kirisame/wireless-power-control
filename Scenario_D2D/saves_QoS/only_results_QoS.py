@@ -22,7 +22,7 @@ def load_and_plot_only(k_size=50):
     # --- Reporting ---
     Sapo.print_qos_metrics(results)
     # --- Plotting ---
-    Sapo.plot_qos_cdf(results)
+    Sapo.plot_qos_cdf(results, save_dir=None)
     
 
 if __name__ == "__main__":
