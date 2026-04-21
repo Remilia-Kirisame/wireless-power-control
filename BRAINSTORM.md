@@ -10,48 +10,80 @@ Then decide whether Figma would help you refine specific screens. Repeat the wor
 
 ## Brainstorm — what the website could be
 
-The capstone has two scenarios: **D2D** (interference-channel power allocation, GNN + DNN) and **JSAC** (joint sensing-and-communication on vehicular links, GNN-only). Both compare a learned model against the iterative **WMMSE** baseline and a naive **equal-power** lower bound. The website should make this legible to a reader who has never opened the code, and give the reviewer something to click.
+The capstone has two scenarios and **both are first-class results**, not one main + one archived. The narrative arc is:
+
+1. **D2D — Foundation.** We built *both* a DNN (MLP, supervised) and a GNN (IGCNet, also approximating WMMSE). The headline finding: **DNN approximation quality degrades as K grows, GNN stays close to WMMSE.** The reason is architectural — the MLP's input/output dimensions are pinned to K, so training at K=10 doesn't transfer and parameter count explodes; the GNN shares weights across nodes and is node-count-agnostic. This is *the* result that justifies going GNN-only in everything that follows.
+2. **JSAC — Application.** The GNN is applied to a richer, constrained vehicular setting (Blue / Yellow / Green cars, per-group power budget, soft SINR constraint on sensing links). Demonstrates that the same architecture extends cleanly to a harder problem.
+
+Both scenarios compare their learned model(s) against the iterative **WMMSE** baseline and a naive **equal-power** lower bound. The website should make this arc legible to a reader who has never opened the code, and give the reviewer something to click.
 
 Think of the site as three concentric circles:
 
 1. **A static poster** — what this is, why it matters, the result.
-2. **Figures & tables** — the same deliverable as `save_main/jsac_results.png` and `save_test/jsac_*.png`, but web-native (clean, zoomable, with captions).
+2. **Figures & tables** — the same deliverable as `save_main/jsac_results.png` and `save_test/jsac_*.png`, `saves/*.png`, `saves_QoS/*.png` but web-native (clean, zoomable, with captions).
 3. **Small interactive bits** — widgets that let the reader *see* the problem, not just read about it.
 
 ### Candidate sections (one page, scroll-driven)
 
-- **Hero** — title, one-line pitch ("approximate WMMSE with a GNN, ~30× faster at inference, with a hard per-group power budget and a soft SINR constraint"), author, logos.
-- **Problem** — the interference channel in one diagram. For D2D: K transceiver pairs. For JSAC: Blue-Yellow-Green cars, orthogonal channels inside a Blue cluster, same-channel interference across Blue clusters. A static SVG is enough; the D2D case can be the "simple version" and JSAC the "real version."
-- **Method** — IGCNet in a single figure: node features → 4 × IGConv → per-group softmax → power vector. Call out the two edge types (interference, intra-group) and the `apply_group_softmax` trick that enforces the budget *by construction*.
-- **Results** — 2×2 grid from `jsac_results.png` (Green SR & Yellow violation vs. B and vs. (M_y, M_g)). Plus a compact runtime table — the headline is that GNN trails WMMSE in sum-rate by a small margin but wins by orders of magnitude in latency.
-- **Deep dive** — the three panels from `jsac_deep_dive.png` (per-link power bars, per-group budget utilization, Yellow-vs-Green share) and a layout snapshot strip where brightness of each Rx dot encodes allocated power.
-- **D2D (archived)** — smaller section. Same shape as above but for the IC/IMAC setup; label it "prior work, kept for reference."
-- **References** — the three papers in README (W1P1, W2P2, W4P2) with DOIs.
+The page reads as a linear argument: *problem → D2D finding → why GNN → JSAC application → deep dive → refs.*
+
+- **Hero** — title, one-line pitch (something like *"Approximating WMMSE with graph neural networks — for the classical interference channel, and for joint sensing-and-communication."*), author, affiliation.
+- **Problem** — why wireless power allocation is hard in one diagram. WMMSE is near-optimal but iterative and slow; inference-time matters in fast-changing channels. Frame both scenarios briefly: D2D is the classical interference channel (K transceiver pairs, simple version); JSAC adds Rx types, per-group budgets, and SINR constraints (real version).
+
+- **Scenario 1 · D2D (Foundation)** — the scenario where we discovered *what to keep* about ML for this problem.
+  - Setup diagram: K transceiver pairs, Gaussian IC / IMAC.
+  - Two models we trained: **DNN (MLP, supervised against WMMSE)** and **GNN (IGCNet)**. Small architecture cards for each.
+  - **Headline figure — the scaling finding.** Sum-rate (or sum-rate / WMMSE ratio) as a function of K, three lines: WMMSE (reference), GNN, DNN. The DNN line falls away as K grows; the GNN tracks WMMSE. This single chart earns the entire JSAC section.
+  - Quick architectural explainer: **why** the DNN scales poorly (fixed input/output dimensions tied to K, parameter count grows quadratically, no weight sharing) and why the GNN doesn't (one shared message-passing module runs over however many nodes you hand it).
+  - Optional sub-panel: the **QoS variant** (`test_QoS.py`) — same setup with a minimum-rate constraint per user, showing the GNN still tracks WMMSE.
+
+- **Method bridge · Why GNN** — a short, figure-driven "here's the generalizable lesson." IGCNet in one diagram: node features → 4 × IGConv (message-passing with `aggr='max'`) → output head → power vector. Call out: weight sharing across nodes, O(|E|) inference, K-independence. This is the joint between D2D and JSAC; keep it tight.
+
+- **Scenario 2 · JSAC (Application)** — the GNN handed a harder problem.
+  - Setup diagram: Blue (Tx) / Yellow (sensing Rx) / Green (comm Rx), orthogonal channels inside a cluster, same-channel interference across clusters.
+  - What's *new* vs. D2D: two edge types (intra-group + inter-cluster interference), per-group softmax output (budget enforced by construction), squared-hinge penalty on Yellow SINR.
+  - **Results** — 2×2 grid from `jsac_results.png` (Green SR & Yellow violation, vs. B and vs. (M_y, M_g)) + compact runtime table. Headline: GNN trails WMMSE on Green sum-rate by a small margin, wins orders-of-magnitude on latency.
+
+- **Deep dive** — side-by-side lower-density section:
+  - **JSAC** — the three panels from `jsac_deep_dive.png` (per-link power bars, per-group budget utilization, Yellow-vs-Green share) and a layout snapshot strip where Rx brightness encodes allocated power.
+  - **D2D (QoS)** — a smaller strip showing how the GNN respects the minimum-rate constraint vs. unconstrained WMMSE. Optional for v1 if time is tight.
+
+- **References** — the three papers in README (W1P1, W2P2, W4P2) with DOIs, rendered as a monospaced bibliography block.
 
 ### Interactive ideas (pick a subset — the more ambitious ones are sandbox fodder)
 
 Ordered by increasing effort:
 
-- **A. Layout gallery (easy).** A small carousel of pre-rendered PNG layouts (from `save_test/jsac_layout_snapshots.png`) with method-name toggles (Equal / WMMSE / GNN). Pure image swap, no JS math.
-- **B. Method comparison toggle (easy).** Same plot area, three buttons that fade in one method's line at a time on the sum-rate curve. Teaches the reader to read the figure.
-- **C. Topology slider (medium).** Slider over `B ∈ {3, 5, 7, 10, 13}` (or `(M_y, M_g)` pairs). On change, the sum-rate / violation numbers update from a prebaked JSON dump of `results_sweep_B.pkl`. No model runs in the browser; just lookup.
-- **D. Power-allocation viewer (medium).** Drop a single layout JSON (Blue/Yellow/Green positions + allocated powers per method) in. Render it as an SVG map where Rx dot size or brightness = allocated power, Tx arrows colored by target link type. Clicking a Blue car highlights its cluster.
-- **E. Interference sandbox (medium-hard).** Let the reader drag a Blue car around a 2D field; recompute path loss in JS (the `(200/d)^3 × L` formula is trivial) and show the resulting interference matrix heatmap. Learn-by-feel that moving Blues close together wrecks the channels. *No GNN inference*, just channel physics.
-- **F. WMMSE iteration visualizer (hard).** Port the WMMSE inner loop to JS for a small K (say K=10). Step-through: show power vector evolving over iterations, with sum-rate climbing. Anchor the "WMMSE is iterative, that's the cost we're paying" story.
-- **G. ONNX-exported GNN in the browser (hard, stretch).** Export `IGCNet` to ONNX, run it with `onnxruntime-web`. Reader draws a layout, GNN predicts powers, site shows resulting SINRs. High wow-factor, real risk the export doesn't handle PyG's message-passing cleanly.
+- **A. Layout gallery (easy).** A small carousel of pre-rendered PNG/SVG layouts (from `save_test/jsac_layout_snapshots.png`) with method-name toggles (Equal / WMMSE / GNN). Pure image swap, no JS math.
+- **B. Method comparison toggle (easy).** Same plot area, three buttons that fade in one method's line at a time on the sum-rate curve. Teaches the reader to read the figure. Useful in *both* the D2D scaling section and the JSAC results section.
+- **C. Topology slider — JSAC (medium).** Slider over `B ∈ {3, 5, 7, 10, 13}` (or `(M_y, M_g)` pairs). On change, sum-rate / violation numbers update from a prebaked JSON dump of `results_sweep_B.pkl`. No model runs in the browser; just lookup.
+- **C′. Scaling slider — D2D (medium).** The companion to C, for the *foundation* scenario. Slider over `K ∈ {10, 20, 30, 50, ...}` from the D2D sweep. On change, three lines (WMMSE / GNN / DNN) and three number readouts update from a prebaked JSON dump of the D2D results. **This is the widget that makes the DNN-doesn't-scale story land viscerally.** Probably the single highest-leverage interactive in v1.
+- **D. Power-allocation viewer (medium).** Drop a single layout JSON (Blue/Yellow/Green positions + allocated powers per method) in. Render it as an SVG map where Rx dot size or brightness = allocated power, Tx arrows colored by target link type. Clicking a Blue car highlights its cluster. JSAC-flavored; a D2D analogue (link-pair map, per-link power) is trivially similar.
+- **E. Interference sandbox (medium-hard).** Let the reader drag a Tx around a 2D field; recompute path loss in JS (the `(200/d)^3 × L` formula is trivial) and show the resulting interference matrix heatmap. Learn-by-feel that moving Tx close together wrecks the channels. *No GNN inference*, just channel physics. Works for either scenario.
+- **F. WMMSE iteration visualizer (hard).** Port the WMMSE inner loop to JS for a small K (say K=10). Step-through: show power vector evolving over iterations, with sum-rate climbing. Anchor the "WMMSE is iterative, that's the cost we're paying" story. Natural home: the problem/motivation section near the top.
+- **G. ONNX-exported GNN in the browser (hard, stretch).** Export `IGCNet` to ONNX, run it with `onnxruntime-web`. Reader draws a layout, GNN predicts powers, site shows resulting SINRs. High wow-factor, real risk the export doesn't handle PyG's message-passing cleanly. If it works, wire it in for both D2D and JSAC — same model, two input shapes.
 
-Sensible v1 scope: **hero + problem + method + results + deep dive + references**, static, with **A (layout gallery)** and **C (topology slider)** as the only interactive bits. Save D and E for `sandbox/` experimentation; F and G are research projects of their own.
+**Sensible v1 scope.** Sections: *hero + problem + D2D (foundation) + method bridge + JSAC (application) + deep dive + references.* Interactive widgets: **C′ (D2D scaling slider)** as the D2D section's centerpiece, **A (layout gallery)** and **C (JSAC topology slider)** in the JSAC section. Save D and E for `sandbox/` experimentation; F and G are stretch/research projects.
+
+Both C and C′ share the same component pattern — a slider + a small multi-line chart + a numeric readout panel — so they can be built once as a `<sweep-slider>` Web Component and fed different JSON.
 
 ### Vibe
 
-"Clean academic poster feel." Concretely:
+**"Modern, cool-tech feel."** Think Linear / Vercel / Anthropic docs / research-lab microsites — the look of a thing that was *built*, not *typeset*. Concretely:
 
-- Serif headings (e.g. system serif / Charter / Georgia), sans-serif body, generous line height.
-- Muted palette tied to the scenario colors the codebase already uses: **Blue** `#2196F3` (WMMSE / Blue cars / Tx), **Orange** `#FF5722` (GNN / primary accent), **Yellow** `#F6C445` (sensing links), **Green** `#4CAF50` (comm links), **grey** `#888888` (naive). These match the `COLORS` dict in `Scenario_JSAC/main.py:393`.
-- Wide margins, figures first, body text explains the figure — not the other way around.
-- No shadows, no gradients, no animation for decoration. Transitions only where they aid comprehension (e.g. fading between methods).
-- Single column, max ~720px reading width, figures can break out to ~1100px.
-- Footer with DOI-style reference list.
+- **Dark by default.** Deep near-black background (`#0a0b0e`–`#111218`), high-contrast off-white body (`~#e8e8ea`), muted grey for secondary text. A light-mode toggle is optional; the canonical version is dark.
+- **Typography.** Geometric sans for headings (Inter / Geist / Space Grotesk, tight tracking, 600–700 weight), clean sans for body (Inter, 400–500), **monospace accents** (JetBrains Mono / IBM Plex Mono / Geist Mono) for eyebrows, labels, code, numeric readouts, and axis ticks. Monospace is the "this is technical" tell; use it liberally for small metadata.
+- **Palette — keep the codebase scenario colors, reframe them as accents on dark.** `Blue #2196F3` (WMMSE / Blue cars / Tx), `Orange #FF5722` (GNN / primary accent), `Yellow #F6C445` (sensing), `Green #4CAF50` (comm), `#888888` (naive) — from `COLORS` in `Scenario_JSAC/main.py:393`. On dark, nudge saturation: GNN-orange can run slightly hotter (`#FF6A3D`), WMMSE-blue slightly cooler (`#4DA3FF`). Add one or two near-neutral steel tones for UI chrome.
+- **Surfaces & depth.** One or two elevation levels via subtle 1px borders (`rgba(255,255,255,0.06)`) and very quiet inner glows — not drop-shadows. Cards, charts, and interactive panels sit on faint panels (`#141620`-ish) against the near-black background. Rounded corners 8–12px.
+- **Accent glow.** Sparingly: a soft radial tint behind the hero, a faint colored halo around the primary CTA / active chart line. Never neon-party; think "data center at 2am."
+- **Grid, not column.** Break out of the single-column poster feel. Use a responsive grid — hero spans full width, results panels can be 2-up / 3-up, figures can go full-bleed. Generous negative space.
+- **Motion as signal, not decoration.** Tiny reveals on scroll (fade + 4–8px rise, ≤300ms, easing `cubic-bezier(0.2, 0.8, 0.2, 1)`). Chart lines draw in once when they enter the viewport. Toggling a method crossfades in ~200ms. Nothing bounces, nothing spins. Respect `prefers-reduced-motion`.
+- **Data-native UI chrome.** Small live-looking touches that signal "this is engineering": monospace axis ticks, numeric readouts with tabular figures (`font-variant-numeric: tabular-nums`), a tiny status dot next to "GNN inference: 8.2ms" style metrics, keyboard hint pills (`[ / ]` to navigate), command-palette aesthetic for any search/filter.
+- **Interactivity framing.** Every interactive widget labels itself — a small eyebrow that says "interactive · drag to explore" or "live data · topology sweep" — so the reader knows to engage.
+- **Typography scale.** Display (hero): ~clamp(40px, 6vw, 84px), tight leading, tight tracking. H2: ~28–32px. Body: 16–17px, line-height 1.65. Captions / eyebrows: 12–13px mono, tracked out `0.08–0.14em`.
+- **Footer.** A references list rendered like a bibliography but styled as a monospaced block — DOIs rendered as links in the accent color.
+
+What to avoid: gradients-as-backgrounds, pastel watercolor blobs, playful illustrations, heavy shadows, anything that reads "marketing landing page."
 
 ### What goes into `site/` vs `sandbox/`
 
@@ -60,6 +92,8 @@ Sensible v1 scope: **hero + problem + method + results + deep dive + references*
 
 ### Open questions to resolve before v1
 
-- Do we want audio narration or a short screen-recording video walkthrough? (Probably not for v1.)
+- Do we want audio narration or a short screen-recording video walkthrough? (Not for v1.)
 - Hosting: is this offline-only (capstone defense on the user's machine) or do we push to GitHub Pages? The initial direction is **offline** (stated in setup instructions), so no deploy step — but the scaffold should be GitHub-Pages-clean so we can flip later by just pushing the folder.
 - Do we dump model artifacts (`.pth`, `.pkl`) into `site/assets/`? No — keep the site data-only. Convert the pickles we need into small JSON files.
+- **D2D data export.** The D2D scaling chart (and the C′ slider) needs a JSON that doesn't currently exist pre-formatted. We'll write a tiny `Scenario_D2D/export_for_site.py` that loads whatever sweep pickles live in `saves/` and dumps `{K, method, sum_rate, rate_ratio_vs_wmmse, inference_time}` tuples. If the D2D saves got wiped by `.gitignore`, we may need to re-run the D2D sweep once to regenerate them — minor, since no retraining of the already-saved models is required.
+- **D2D visual parity.** Do we render D2D link layouts the same way as JSAC snapshots (dots + lines with power-encoded brightness)? Probably yes — one shared SVG layout component, two JSON shapes. That keeps the site's visual vocabulary consistent across scenarios.

@@ -91,3 +91,66 @@ If you ever want the site live on the internet, the simplest path is **GitHub Pa
 - To preview: `cd site && python -m http.server 8000`, open `localhost:8000`, refresh after edits.
 - `sandbox/` is a twin scaffold for experiments — use it to prototype before touching `site/`.
 - No frameworks, no build, no server code. Three files and a folder of assets.
+
+---
+
+## Q&A log
+
+Running notes from design conversations. Each item keeps the question and the short answer; expand later if it becomes a real section.
+
+### Q1 — The two figures in the sandbox: are they drawn by JS, not images? What's the best practice for figures that come from Python?
+
+Yes — correct. Both sandbox figures are **SVG elements built by `sandbox/script.js` at page load**, not images pulled from `assets/`. `drawLayout()` and `drawBars()` call `document.createElementNS(...)` to add `<rect>`, `<circle>`, `<line>`, `<text>` nodes into the empty `<svg>` placeholders in `index.html`.
+
+For research figures that are *produced by Python*, there isn't one right answer — there are four common paths, and the best choice depends on whether you want the figure to be **locked** or **responsive/interactive**:
+
+1. **Export as PNG or SVG from Python, reference as `<img>`.** Simplest. In matplotlib: `plt.savefig('fig.svg')` or `plt.savefig('fig.png', dpi=200)`. Drop into `assets/images/`, reference from HTML. **SVG is usually the better pick** for plots — crisp at any zoom, small file, works offline, no JS required. Good for: the hero / headline / final-deliverable figures you don't want to rebuild.
+2. **Dump data as JSON from Python, draw in JS.** What the sandbox does. `pickle.load(...)` → `json.dump(...)` into `assets/data/*.json`, then the site reads it and draws SVG with its own code (or a small library like D3 / Chart.js / uPlot). Good for: any figure that needs to be **interactive** (a slider over B, toggling methods, hover tooltips). Downside: you rewrite the plotting code in JS.
+3. **Use a Python-to-web plotting library.** Plotly / Bokeh / Altair can produce a standalone HTML fragment with interactivity baked in. You run it once in Python, embed the HTML chunk. Downside: bigger JS payload; less stylistic control over the "modern cool-tech" look.
+4. **Headless screenshot pipeline.** Keep matplotlib figures, export as SVG into `assets/images/`, re-run whenever results change. Good middle ground if you never need interaction.
+
+**Practical plan for this project.** For the v1 site:
+
+- Take the **polished deliverable figures** (`jsac_results.png`, `jsac_deep_dive.png`, `jsac_layout_snapshots.png`) — **export them from the Python pipeline as SVG** (`savefig('...svg')`) and drop into `site/assets/images/`. Reference as `<img>` in HTML. These are "frozen" results; no need to rebuild in JS.
+- For the **interactive bits** (topology slider over `B`, method toggles) — dump a small JSON from the relevant pickle (e.g. `results_sweep_B.pkl` → `site/assets/data/sweep_B.json`) and draw the chart in JS. A `Scenario_JSAC/export_for_site.py` helper can do the Pickle→JSON conversion in a couple of dozen lines.
+
+Rule of thumb: **if the figure can be re-rendered from a table of numbers that fits in a few KB, make it interactive with JSON + JS. If it's a complex matplotlib figure with custom layout, export as SVG.**
+
+### Q2 — How do I save an interactive feature as a reusable component so changes don't break it later?
+
+Plain HTML/CSS/JS has no built-in "component" language construct the way React does — but the browser has a native mechanism called **Web Components** (a.k.a. custom elements) and there are a few lightweight conventions on top. Ordered from simplest to most robust:
+
+1. **Folder convention.** Make `site/components/<name>/` with its own `name.html` snippet (or just a template inside JS), `name.css`, and `name.js`. The main page includes them via `<link rel="stylesheet">` and `<script src="...">`. Each component exposes a `mount(element, props)` function. Cheap, works immediately, but styles are global — you have to namespace class names yourself (e.g. `.topo-slider__bar`).
+2. **Web Components (recommended).** Native browser feature, no libraries. You define a class:
+   ```js
+   // site/components/topology-slider/topology-slider.js
+   class TopologySlider extends HTMLElement {
+       connectedCallback() { /* build DOM, wire up events */ }
+   }
+   customElements.define('topology-slider', TopologySlider);
+   ```
+   Then use it in HTML as `<topology-slider data-src="assets/data/sweep_B.json"></topology-slider>`. Attach a **Shadow DOM** inside to get **scoped styles** — the component's CSS can't leak out, and the page's CSS can't leak in. Encapsulated, reusable, no build step, no framework. This is the "modern vanilla" way.
+3. **ES modules.** Separate concern from packaging: write each component as an ES module (`export class ...`), load with `<script type="module">`. Pairs naturally with Web Components. Needs a local server (which you already have via `python -m http.server`).
+4. **Freeze by copy.** When a component is in a known-good state, **copy** it to `site/components/_frozen/<name>-v1/` and pin imports in `index.html` to the frozen path. Future edits happen against a new `_frozen/<name>-v2/`. Crude but effective and zero infrastructure. Git commits / tags give you the same with more discipline.
+
+**Practical plan for this project.**
+
+- When we build the first interactive widget (likely the topology slider or method toggle), put it in `site/components/topology-slider/` as a Web Component (`<topology-slider>`) using Shadow DOM for style isolation.
+- When a component behaves the way we want and we don't want to touch it again, **copy the folder to `_frozen/topology-slider-v1/`** and reference the frozen path. Keep the non-frozen version around for iteration.
+- Each component folder gets a one-line `README` or top-of-file comment stating: what props it accepts (data-attributes), what events it emits, and what DOM it produces.
+
+### Q3 — Can we run Python in the website for live model inference? (Letting the reader experience the GNN predict powers.)
+
+Short answer: **yes, with caveats** — and for this project the honest recommendation is usually "don't run Python; pre-compute results or export the model to a web-native format." Your options, in rough order of practicality:
+
+1. **Pre-compute and lookup (simplest, recommended default).** Run inference in Python for, say, 200 layouts × 3 methods, dump `{layout, method, powers, metrics}` tuples to `assets/data/*.json`. The site lets the reader click through *real results* — no runtime, no server, offline-friendly. Feels interactive even though no model is running. This is the right answer for a capstone defense on a single laptop.
+2. **Export the GNN to ONNX, run with `onnxruntime-web` in the browser.** `onnxruntime-web` ships a WebAssembly runtime that executes ONNX models client-side — no Python, no server. `torch.onnx.export(model, sample_input, 'igcnet.onnx')` is one line, but PyTorch-Geometric's message-passing layers don't always export cleanly (custom ops, dynamic graphs). Realistic effort: a few evenings of debugging. If it works, the reader can sketch a layout and see the GNN's powers *actually computed live* in their browser.
+3. **Pyodide (Python in the browser, via WebAssembly).** Ships CPython + NumPy + SciPy + pandas as a ~10–30MB WASM bundle. **PyTorch is not cleanly supported** (there's experimental work; not production-ready). Works great for Python math you want to demo live (e.g. the **WMMSE iterations on a tiny K=5–10 toy problem** — idea F in the brainstorm). Not the path for running the real GNN.
+4. **TensorFlow.js.** Similar story to ONNX Runtime: convert PyTorch → ONNX → TF.js, run in the browser. More steps, similar outcome.
+5. **Local Python backend.** Run a small Flask / FastAPI server on the user's laptop; the browser makes HTTP calls to `localhost:5000/predict`. Pro: uses the real research code, zero export pain. Con: no longer a "static" site — the capstone reviewer has to start a backend. Fine for an in-person defense, clumsy for anyone opening a ZIP later.
+
+**Practical plan for this project.**
+
+- **v1 — pre-computed lookup.** Dump 50–200 layouts' worth of Blue/Yellow/Green positions and three methods' power vectors to `assets/data/layouts.json`. The site renders any layout the reader picks; the reader feels like the model is running, but we just read JSON. Zero risk.
+- **v2 — ONNX in the browser (stretch goal, optional).** Attempt the ONNX export of IGCNet. If it works, build a small widget where the reader drags Blue cars around a 2D field and the page recomputes channel losses (pure JS) + runs the GNN via `onnxruntime-web` + shows SINRs. If the export fights us, fall back to v1 — we've already got it working.
+- **Not pursuing for v1:** Pyodide, TF.js, local backend. If a reviewer specifically wants to see Python code execute, they can run `python test_JSAC.py` locally — that's what the repo is for.
