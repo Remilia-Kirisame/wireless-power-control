@@ -1,9 +1,14 @@
 /* prototype/script.js — page-level orchestration.
- * - Scroll-triggered reveal (respects prefers-reduced-motion).
- * - Simple data cache for components that want to share fetches.
+ * - Entry overlay animation (title plate + orange load bar, then wipe).
+ * - Hash-based tab router across seven views (home + 01..06).
+ * - Per-view reveal trigger + sidebar active-link sync.
+ * - Shared data cache for components that dedupe fetches.
  */
 
 const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const VIEWS = ['home', 'problem', 'd2d', 'method', 'jsac', 'deepdive', 'refs'];
+const VIEW_FADE_MS = 160;       // half-crossfade duration
+const ENTRY_DURATION_MS = 2000; // title fade-in + progress fill + wipe total
 
 // --------------------------------------------------------------------
 // Shared data cache — components can read/write here to dedupe fetches.
@@ -26,47 +31,119 @@ window.fetchJSONCached = async function (url) {
 };
 
 // --------------------------------------------------------------------
-// Scroll-reveal — IntersectionObserver, disabled under reduced-motion.
+// View router — swap which <section class="view"> is active.
 // --------------------------------------------------------------------
-function initReveal() {
-    const els = document.querySelectorAll('.reveal');
-    if (prefersReduced || !('IntersectionObserver' in window)) {
-        els.forEach((el) => el.classList.add('is-visible'));
+const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+
+function revealAll(view) {
+    view.querySelectorAll('.reveal').forEach((el) => el.classList.add('is-visible'));
+}
+
+function viewIdFromHash() {
+    const raw = (location.hash || '#home').replace('#', '').trim();
+    return VIEWS.includes(raw) ? raw : 'home';
+}
+
+function syncSidebar(activeId) {
+    document.querySelectorAll('.tab-link').forEach((link) => {
+        link.classList.toggle('is-active', link.dataset.view === activeId);
+    });
+}
+
+async function switchView(nextId) {
+    const next = document.getElementById(nextId);
+    if (!next) return;
+    const current = document.querySelector('.view.is-active');
+    if (current === next) return;
+
+    syncSidebar(nextId);
+
+    if (prefersReduced || !current) {
+        current?.classList.remove('is-active', 'is-ready');
+        next.classList.add('is-active', 'is-ready');
+        revealAll(next);
+        window.scrollTo(0, 0);
         return;
     }
-    const io = new IntersectionObserver(
-        (entries) => {
-            entries.forEach((entry) => {
-                if (entry.isIntersecting) {
-                    entry.target.classList.add('is-visible');
-                    io.unobserve(entry.target);
-                }
-            });
-        },
-        { threshold: 0.12, rootMargin: '0px 0px -40px 0px' }
-    );
-    els.forEach((el) => io.observe(el));
+
+    // Phase 1 — fade current out.
+    current.classList.remove('is-ready');
+    await wait(VIEW_FADE_MS);
+    current.classList.remove('is-active');
+
+    // Phase 2 — fade next in. Force a reflow so the opacity transition
+    // actually starts from 0 instead of being collapsed by the browser.
+    next.classList.add('is-active');
+    void next.offsetHeight;
+    next.classList.add('is-ready');
+
+    window.scrollTo(0, 0);
+    revealAll(next);
+}
+
+function initRouter() {
+    const initialId = viewIdFromHash();
+    const initial = document.getElementById(initialId);
+    if (initial) {
+        initial.classList.add('is-active', 'is-ready');
+        revealAll(initial);
+        syncSidebar(initialId);
+    }
+
+    window.addEventListener('hashchange', () => switchView(viewIdFromHash()));
+
+    // Any in-page anchor whose target is one of our views routes through
+    // the view switcher instead of the default browser jump-scroll.
+    document.querySelectorAll('a[href^="#"]').forEach((a) => {
+        a.addEventListener('click', (ev) => {
+            const target = a.getAttribute('href').slice(1);
+            if (!VIEWS.includes(target)) return;
+            ev.preventDefault();
+            if (location.hash.replace('#', '') === target) {
+                // Same hash — hashchange won't fire; drive it manually.
+                switchView(target);
+            } else {
+                location.hash = target;
+            }
+        });
+    });
 }
 
 // --------------------------------------------------------------------
-// Live readout in the hero — cycle through a few real numbers so the
-// "LIVE" chip isn't a lie.
+// Entry animation — overlay holds briefly, wipes out, body marked loaded.
+// --------------------------------------------------------------------
+function initEntry() {
+    const overlay = document.querySelector('.entry-overlay');
+    if (prefersReduced || !overlay) {
+        document.body.classList.add('is-loaded');
+        overlay?.remove();
+        return;
+    }
+    setTimeout(() => {
+        document.body.classList.add('is-loaded');
+        overlay.remove();
+    }, ENTRY_DURATION_MS);
+}
+
+// --------------------------------------------------------------------
+// Live readout in the sidebar — cycle through a few real-ish samples.
 // --------------------------------------------------------------------
 function initLiveReadout() {
-    const el = document.querySelector('[data-live-ms]');
-    if (!el || prefersReduced) return;
+    const els = document.querySelectorAll('[data-live-ms]');
+    if (!els.length || prefersReduced) return;
     const samples = [58, 62, 55, 71, 64, 49, 67, 53];
     let i = 0;
     setInterval(() => {
         i = (i + 1) % samples.length;
-        el.textContent = samples[i];
+        els.forEach((el) => (el.textContent = samples[i]));
     }, 2800);
 }
 
 // --------------------------------------------------------------------
-// Bootstrap
+// Bootstrap.
 // --------------------------------------------------------------------
 document.addEventListener('DOMContentLoaded', () => {
-    initReveal();
+    initEntry();
+    initRouter();
     initLiveReadout();
 });

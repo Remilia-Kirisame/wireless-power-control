@@ -2,7 +2,7 @@
 
 > **Purpose.** This file is a **self-contained prompt for an AI coding assistant** (Claude Code, Cursor, etc.) to build v1 of the capstone showcase website. It consolidates decisions from `BRAINSTORM.md` and removes the "we're still deciding" framing. Read `CLAUDE.md` for repository context; read `WEBSITE.md` only if you need to explain the dev loop to a beginner.
 >
-> **Deliverable.** A polished, one-page static site that runs with `python -m http.server 8000` and tells the capstone's story with three core interactive widgets (a D2D scaling slider, a JSAC topology slider, and a JSAC layout gallery) plus two richer widgets (a power-allocation viewer and an interference physics sandbox).
+> **Deliverable.** A polished, **tab-based single-HTML-file** static site that runs with `python -m http.server 8000` and tells the capstone's story with three core interactive widgets (a D2D scaling slider, a JSAC topology slider, and a JSAC layout gallery) plus two richer widgets (a power-allocation viewer and an interference physics sandbox). The shell is a seven-view SPA — a landing/Home view plus six tab views (`01 Problem … 06 References`) — with an overlay entry animation on first load.
 >
 > **Target directory.** The user specifies the output directory **at invocation time** (e.g., *"build into `prototype/`"*, or *"build into `web/`"*). Throughout this file, the placeholder **`{{SITE_DIR}}/`** stands for that directory. Substitute the name the user gave you. Create the directory fresh — **do not build into the existing `site/`**; `site/` is a protected reference scaffold the user keeps as-is. (There may or may not be a `sandbox/` folder — ignore it if present; it is not an input.)
 
@@ -10,7 +10,7 @@
 
 ## 1. Objective
 
-Build a single-page static website that communicates the result of an ML-based wireless-power-allocation capstone to a technically literate reader (capstone committee + general ML/wireless audience). The site should (a) render the core figures with web-native polish, (b) let the reader *feel* the key findings through five interactive widgets, and (c) look like it was built by engineers — **"modern cool-tech"**, not "academic poster."
+Build a **tab-based single-HTML-file** static website that communicates the result of an ML-based wireless-power-allocation capstone to a technically literate reader (capstone committee + general ML/wireless audience). The site should (a) render the core figures with web-native polish, (b) let the reader *feel* the key findings through five interactive widgets, (c) guide entry with a short overlay animation that reveals a sidebar + Home view, and (d) look like it was built by engineers — **"modern cool-tech"**, not "academic poster."
 
 ---
 
@@ -79,7 +79,9 @@ Reference tone: Linear, Vercel, Anthropic docs, research-lab microsites. Looks *
 - One or two elevation levels via 1px borders (`rgba(255,255,255,0.06)`) and very quiet inner glows — *no* drop shadows. Rounded corners 8–12px.
 - Sparing accent glow: soft radial tint behind the hero; faint colored halo around the *active* chart line. Never neon-party — "data center at 2am."
 - Grid-based layout (not single column). Hero full-bleed; content in a ~1200px max container; figures can break out to ~1100px.
-- Motion as signal: fade + 4–8px rise on scroll entry (≤300ms, `cubic-bezier(0.2, 0.8, 0.2, 1)`). Chart lines draw-in once on enter. Method toggles crossfade ~200ms. Nothing bounces or spins. **Disable all of it under `prefers-reduced-motion: reduce`.**
+- Motion as signal: fade + 4–8px rise on view/reveal entry (≤300ms, `cubic-bezier(0.2, 0.8, 0.2, 1)`). Chart lines draw-in once on enter. Method toggles crossfade ~200ms. Nothing bounces or spins. **Disable all of it under `prefers-reduced-motion: reduce`.**
+- **Entry overlay (first load only).** Full-viewport panel in `--bg` carrying a centered **large mono-uppercase title plate** ("WIRELESS POWER CONTROL · CAPSTONE") and a **thin orange load bar** below it that fills left-to-right over ~1200ms. When the fill completes, the overlay wipes horizontally off-screen (~400ms, same easing); total ~2.0s. Sidebar slides in afterward (~360ms). Under `prefers-reduced-motion`, overlay is hidden instantly.
+- **Tab crossfade.** Switching views fades the current view out (~160ms) then fades the next one in (~160ms) — total ~320ms. Under `prefers-reduced-motion`, the swap is instantaneous.
 
 **Data-native chrome.**
 - Monospace axis ticks and metric labels.
@@ -93,16 +95,56 @@ Reference tone: Linear, Vercel, Anthropic docs, research-lab microsites. Looks *
 
 ## 6. Page structure (linear narrative)
 
-One scrollable page, roughly these sections, in this order:
+One HTML file; **seven views** that share the same shell (one landing + six content tabs). Linear *narrative* order (how a new reader should traverse them) is still `home → 01 Problem → 02 D2D → 03 Method → 04 JSAC → 05 Deep dive → 06 References`, but the reader visits each view by clicking the left-sidebar tab, not by scrolling down a long page.
 
-### 6.1 Hero
-Full-bleed, ~90vh.
+### 6.0 Shell & navigation
+
+The site is a **single-HTML-file multi-view SPA**, not a long scroll. Build the shell first; every content section in §6.1–§6.7 lives inside it as one view.
+
+**Views.** Seven `<section class="view" data-view="<id>" id="<id>">` elements inside `<main class="views">`:
+
+- `home` — the landing view (hero content; §6.1).
+- `problem`, `d2d`, `method`, `jsac`, `deepdive`, `refs` — the six content sections (§6.2–§6.7).
+
+Only one view is visible at a time. Default view when the URL has no hash is `home`.
+
+**Left sidebar** (persistent after entry animation, fixed position, ~240px wide on desktop):
+- Small monospaced logo block at top (`WIRELESS POWER / CONTROL · CAPSTONE` on two lines, orange square bullet, uppercase).
+- `◀ Home` link (routes to `#home` / the landing view).
+- Thin rule divider.
+- Six numbered section links (`01 Problem`, `02 D2D`, `03 Method`, `04 JSAC`, `05 Deep dive`, `06 References`) — the tab numbers in `--c-orange` when active, `--text-mute` otherwise.
+- Small `● LIVE · GNN ~58ms`-style readout pinned at the bottom (same style as the old hero topbar chip).
+- Active link styling: orange 2px left-border + orange tab number + body color text + `--surface` background.
+- Narrow screens (<860px): sidebar collapses to a horizontal top bar; tab links scroll horizontally; the live-readout chip is hidden to save space.
+
+**Routing.** Hash-based, ~40 lines of vanilla JS in `script.js`. Clicking a `<a href="#<view>">` anchor sets `location.hash`; a `hashchange` listener activates the matching view. Deep links (`index.html#jsac`) work on first load. No framework, no library.
+
+**View crossfade.** Two-phase fade on tab change (no `display: none` during the transition):
+1. Remove `is-ready` from the current view → CSS transitions its `opacity` to 0 (~160ms).
+2. Remove `is-active` (which flips `display: none`), then add `is-active` to the next view, force a reflow, add `is-ready` → its opacity transitions from 0 to 1 (~160ms).
+
+Under `prefers-reduced-motion: reduce`, skip both phases — just toggle classes.
+
+**Entry animation (first load only, option 2 — boot-plate overlay + load bar).**
+1. Full-viewport `<div class="entry-overlay">` covers the page on load; background matches `--bg` so the page state is hidden. Inside, a vertical stack centered in the viewport contains (a) a **large mono-uppercase title plate** `<span class="entry-title">Wireless Power Control · Capstone</span>` at `clamp(22px, 4vw, 44px)`, `letter-spacing: 0.12em`, and (b) below it a **thin progress track** `<div class="entry-progress"><span class="entry-progress-fill"></span></div>` ~220–340px wide, 3px tall, `rgba(255,255,255,0.08)` background.
+2. The title fades up (opacity 0→1, `translateY(8px→0)`) over ~400ms starting at 0ms. The progress track quietly fades in over ~280ms starting at ~200ms.
+3. Starting at ~400ms, the `.entry-progress-fill` (orange, `--c-orange`, with a faint orange box-shadow glow) animates **`transform: scaleX(0) → scaleX(1)` with `transform-origin: left`** over ~1200ms, reading as a load gauge filling left-to-right. All easing is `cubic-bezier(0.2, 0.8, 0.2, 1)`.
+4. At ~1600ms (fill complete), the overlay itself **wipes horizontally off-screen** over ~400ms via `transform: translateX(0 → -101%)` — the same left-to-right motion the bar traced, continued by the overlay departing left.
+5. At ~2000ms (wipe complete), JS adds `is-loaded` to `<body>` and removes the overlay from the DOM.
+6. CSS transitions keyed off `body.is-loaded`: sidebar slides in from the left (~360ms), then hero body + anchor row fade up with short stagger delays (~180ms, ~320ms). Total composed time ~2.5s.
+7. Under `prefers-reduced-motion: reduce`, JS adds `is-loaded` immediately and removes the overlay — the page appears fully composed with no animation.
+
+**Per-view reveals.** The existing `.reveal` fade-up pattern still applies inside each view, but the JS activator toggles `is-visible` on all `.reveal` children of a view when that view *activates*, rather than using `IntersectionObserver`. Each view is short enough that per-element stagger is unnecessary.
+
+### 6.1 Landing view (Home)
+Full-bleed, ~90vh inside the view. This is the default view on first load — the reader sees it when the entry overlay wipes away.
 - Eyebrow mono: `WIRELESS POWER CONTROL · CAPSTONE`.
 - Title (serif-free; Inter/Geist display): e.g. *"Approximating WMMSE with graph neural networks — for the classical interference channel, and for joint sensing-and-communication."* (Treat this as a placeholder the user will refine.)
 - Sub-hero paragraph (~40 words) summarizing the arc: *DNN stopped scaling, GNN didn't, so we took the GNN to a harder problem.*
 - Author line: render the literal tokens **`{{AUTHOR_NAME}}`, `{{AFFILIATION}}`, `{{DATE}}`** in the HTML. Do not invent values; leave them as `{{…}}` so the user can find-and-replace afterward. Style them as if the real values were present (same typography, same layout) so the hero still looks finished.
-- Anchor row: monospace chips linking to each major section (`01 · PROBLEM`, `02 · D2D`, `03 · METHOD`, `04 · JSAC`, `05 · DEEP DIVE`, `06 · REFS`).
+- Anchor row: monospace chips linking to each major section (`01 · PROBLEM`, `02 · D2D`, `03 · METHOD`, `04 · JSAC`, `05 · DEEP DIVE`, `06 · REFS`). These duplicate the sidebar tabs but read as a "enter the showcase" call-to-action from the landing view; clicking one routes through the same hash-based view switcher as the sidebar.
 - Soft radial orange glow bottom-right; subtle grid or scanline overlay is OK if it stays quiet.
+- The old hero "topbar" with logo + live-readout is **removed** — both live in the sidebar now.
 
 ### 6.2 Problem (01)
 Why this problem matters; why WMMSE's speed cost is real.
@@ -301,6 +343,7 @@ The existing `site/` directory at the repo root is a **minimal reference scaffol
 ## 10. Tech conventions (how to build it)
 
 - Components are **ES-module Web Components** with **Shadow DOM**. Load via `<script type="module" src="components/sweep-slider/sweep-slider.js">` in `index.html`.
+- The tab router is plain vanilla JS in `script.js` — ~40 lines — listening on `hashchange` and toggling `is-active` / `is-ready` classes on the matching `<section class="view">`. See §6.0 for the exact transition choreography. No framework, no router library.
 - Use native `<svg>` — no D3, no Chart.js, no Plotly. The math for lines, bars, axes, and gridlines is small and readable, and custom code keeps the "modern cool-tech" detailing (mono ticks, tabular-nums readouts, accent halos on active lines) under our control.
 - State inside components is plain class fields. No state-management library.
 - Data loading: one top-level `DataStore` in `script.js` (or per-component `fetch`) — pick one and be consistent. Cache fetched JSON on `window.__dataCache` to avoid refetch when the user scrolls back.
@@ -348,7 +391,7 @@ The existing `site/` directory at the repo root is a **minimal reference scaffol
 
 ## 12. Build order (suggested)
 
-1. **Tokens and shell.** Write `styles.css` tokens + a skeletal `index.html` with all section `<section id="...">` landmarks and the monospace anchor nav.
+1. **Tokens and shell.** Write `styles.css` tokens + the **tab shell** in `index.html`: the entry overlay, left sidebar (logo, Home link, 01–06 tab links, live readout), `<main class="views">`, and all seven `<section class="view">` landmarks (home + 01–06). Wire up the ~40-line hash router and the entry-animation `is-loaded` trigger in `script.js` before filling content — this de-risks the navigation before any figures exist.
 2. **Data export scripts.** Write `Scenario_JSAC/export_for_site.py` and `Scenario_D2D/export_for_site.py`; run them; confirm JSON lives under `{{SITE_DIR}}/assets/data/`.
 3. **`<sweep-slider>` first** (C + C′). Ship it rendering both D2D scaling and JSAC B-sweep. This is the highest-risk component; de-risk early.
 4. **`<method-toggle>`** (B) — wire into the 2×2 JSAC grid.
@@ -366,11 +409,14 @@ The existing `site/` directory at the repo root is a **minimal reference scaffol
 A reviewer should be able to answer *yes* to each:
 
 - [ ] `cd {{SITE_DIR}} && python -m http.server 8000` → page loads at `localhost:8000` with no console errors.
+- [ ] On first load, the entry overlay shows a large mono-uppercase title plate + an orange load bar that fills left-to-right over ~1.2s, then wipes horizontally off-screen (~2.0s overlay total). Sidebar + Home view then appear with a short staggered fade. No layout jump.
+- [ ] Clicking a sidebar tab (01–06) crossfades to the matching view; clicking `◀ Home` returns to the landing view. `location.hash` updates on every switch and the browser back button works.
+- [ ] Deep-linking (`index.html#jsac`) on a cold load opens directly on that view with no entry-animation artifacts.
 - [ ] The narrative reads D2D-first, JSAC-second; both are visually equivalent in weight.
 - [ ] The D2D scaling slider (C′) is the visual centerpiece of the D2D section.
 - [ ] All five widgets (A, B, C, C′, D, E) render real data from `{{SITE_DIR}}/assets/data/`, not placeholders.
 - [ ] Tab-navigating from the top of the page reaches every interactive widget in a sensible order.
-- [ ] Enabling `prefers-reduced-motion` in the OS or DevTools disables all animations; content still reads correctly.
+- [ ] Enabling `prefers-reduced-motion` in the OS or DevTools disables all animations (entry overlay skipped, tab swaps instantaneous, reveals static); content still reads correctly.
 - [ ] No `.pth` / `.pkl` files under `{{SITE_DIR}}/`.
 - [ ] No `package.json`, no `node_modules/`, no build scripts required.
 - [ ] Opening the site on a 1280px-wide laptop, a 1920px display, and a 390px phone all produce a readable layout.
@@ -381,4 +427,4 @@ A reviewer should be able to answer *yes* to each:
 
 ## 14. One-liner restatement (the prompt to hand the AI)
 
-> Build `{{SITE_DIR}}/` (directory name supplied by the user at invocation — do **not** build into the existing `site/`, which is a read-only reference scaffold) — a polished, offline, one-page static showcase for a wireless-power-allocation capstone. Plain HTML/CSS/JS, no framework, no build step. Dark modern-tech aesthetic (Linear / Vercel / Anthropic-docs reference). Tell the two-scenario story: **D2D (DNN-vs-GNN scaling finding) → method bridge → JSAC (constrained application)** → deep dive → refs. Ship five Web Components (Shadow DOM): `<sweep-slider>` used twice (D2D K-scaling + JSAC B-sweep), `<method-toggle>` for in-chart series filtering, `<layout-gallery>` for JSAC snapshots, `<layout-viewer>` for single-layout SVG maps, `<interference-sandbox>` for drag-a-Tx channel physics. Read pre-exported JSONs from `{{SITE_DIR}}/assets/data/` (write `Scenario_{D2D,JSAC}/export_for_site.py` helpers to produce them). Respect `prefers-reduced-motion`; keyboard-navigate every widget; `COLORS` palette from `Scenario_JSAC/main.py:393` nudged for dark. See `WEB_PROMPT.md` for the full spec.
+> Build `{{SITE_DIR}}/` (directory name supplied by the user at invocation — do **not** build into the existing `site/`, which is a read-only reference scaffold) — a polished, offline, **tab-based single-HTML-file** static showcase for a wireless-power-allocation capstone. Plain HTML/CSS/JS, no framework, no build step. Seven views (Home + `01 Problem … 06 References`) with a persistent left sidebar, a hash-based tab router (~40 lines of vanilla JS), and an overlay wipe-away entry animation on first load; tab swaps crossfade ~320ms; everything disabled under `prefers-reduced-motion`. Dark modern-tech aesthetic (Linear / Vercel / Anthropic-docs reference). Tell the two-scenario story: **D2D (DNN-vs-GNN scaling finding) → method bridge → JSAC (constrained application)** → deep dive → refs. Ship five Web Components (Shadow DOM): `<sweep-slider>` used twice (D2D K-scaling + JSAC B-sweep), `<method-toggle>` for in-chart series filtering, `<layout-gallery>` for JSAC snapshots, `<layout-viewer>` for single-layout SVG maps, `<interference-sandbox>` for drag-a-Tx channel physics. Read pre-exported JSONs from `{{SITE_DIR}}/assets/data/` (write `Scenario_{D2D,JSAC}/export_for_site.py` helpers to produce them). Respect `prefers-reduced-motion`; keyboard-navigate every widget; `COLORS` palette from `Scenario_JSAC/main.py:393` nudged for dark. See `WEB_PROMPT.md` §6.0 for the exact shell choreography.

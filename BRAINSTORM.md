@@ -23,9 +23,9 @@ Think of the site as three concentric circles:
 2. **Figures & tables** — the same deliverable as `save_main/jsac_results.png` and `save_test/jsac_*.png`, `saves/*.png`, `saves_QoS/*.png` but web-native (clean, zoomable, with captions).
 3. **Small interactive bits** — widgets that let the reader *see* the problem, not just read about it.
 
-### Candidate sections (one page, scroll-driven)
+### Candidate sections
 
-The page reads as a linear argument: *problem → D2D finding → why GNN → JSAC application → deep dive → refs.*
+The page tells a linear argument — *problem → D2D finding → why GNN → JSAC application → deep dive → refs* — but as of v1.1 the *shell* is a tab-based SPA rather than a single scrolling page (see **Navigation & entry animation** below). The section inventory below is unchanged; each section is now its own tab rather than a scroll target.
 
 - **Hero** — title, one-line pitch (something like *"Approximating WMMSE with graph neural networks — for the classical interference channel, and for joint sensing-and-communication."*), author, affiliation.
 - **Problem** — why wireless power allocation is hard in one diagram. WMMSE is near-optimal but iterative and slow; inference-time matters in fast-changing channels. Frame both scenarios briefly: D2D is the classical interference channel (K transceiver pairs, simple version); JSAC adds Rx types, per-group budgets, and SINR constraints (real version).
@@ -66,6 +66,18 @@ Ordered by increasing effort:
 **Sensible v1 scope.** Sections: *hero + problem + D2D (foundation) + method bridge + JSAC (application) + deep dive + references.* Interactive widgets: **C′ (D2D scaling slider)** as the D2D section's centerpiece, **A (layout gallery)** and **C (JSAC topology slider)** in the JSAC section. Save D and E for `sandbox/` experimentation; F and G are stretch/research projects.
 
 Both C and C′ share the same component pattern — a slider + a small multi-line chart + a numeric readout panel — so they can be built once as a `<sweep-slider>` Web Component and fed different JSON.
+
+### Navigation & entry animation
+
+The v1.1 shell replaces the single scrolling page with a **multi-view, tab-based SPA** (still one HTML file, still no framework — just a ~40-line hash router in `script.js`).
+
+- **Landing view (Home).** On first load, the reader sees the hero content only — title, tagline, author/affiliation/date, soft orange radial glow. No stacked sections below; the six numbered sections live behind tabs.
+- **Entrance animation — option 2, boot-plate overlay with load bar.** A full-viewport overlay (same near-black as `--bg`) carries two elements, stacked and centered: a **large monospace title plate** ("WIRELESS POWER CONTROL · CAPSTONE", uppercase, tracked `~0.12em`, `clamp(22px, 4vw, 44px)`) that fades up first (~400ms), and below it a **thin horizontal track** (~220–340px wide, 3px tall) whose **orange fill grows from left to right** over ~1200ms, reading as a load gauge. Once the fill completes, the overlay **wipes horizontally off-screen** (~400ms, `cubic-bezier(0.2, 0.8, 0.2, 1)`, same direction the bar traced) to reveal the home view. Total overlay budget: ~2.0s; the left sidebar then slides in (~360ms) and the hero title + anchor row fade up with short stagger delays (~180ms + 320ms). Skipped entirely under `prefers-reduced-motion: reduce`.
+- **Left sidebar.** Persistent after the entry animation. Contains, top-to-bottom: a small monospaced logo block; a `◀ Home` link; a thin divider; the six numbered section links (`01 · Problem … 06 · References`); and a small `● LIVE · GNN ~58ms`-style metric pill at the bottom. ~240px wide on desktop; collapses to a horizontal top bar on <860px.
+- **Tab switching.** Clicking a sidebar link updates `location.hash`; the router listens to `hashchange` and runs a two-phase fade (~160ms out, ~160ms in — total ~320ms) between views. URLs are deep-linkable (`#problem`, `#d2d`, …) and the browser back button works without extra code. Under `prefers-reduced-motion`, the swap is instantaneous.
+- **Per-view reveals.** The existing `.reveal` fade-up pattern still applies, but fires when a view *activates* (all `.reveal` children of the entering view get `is-visible`) rather than on scroll — each view is short enough that staggering per element isn't needed.
+
+**Future improvement — option 3 (canvas/SVG title animation).** Instead of a flat horizontal wipe, build the entrance as a slowly-resolving "interference field" that condenses into the title: animated particle dots or a noisy heat-map over canvas that crystallises into the logo mark as the overlay dissolves. Character-by-character reveal for the title, timed to the field clearing. Higher wow-factor but easily half a day to a day of polish — keep in the sandbox queue, ship v1.1 with the flat wipe.
 
 ### Vibe
 

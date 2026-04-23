@@ -195,7 +195,7 @@ main { display: block; }
 .hero {
     min-height: 90vh;
     display: grid;
-    grid-template-rows: auto 1fr auto;
+    grid-template-rows: 1fr auto;
     padding: clamp(32px, 6vw, 80px) clamp(20px, 5vw, 56px) clamp(40px, 6vw, 72px);
     max-width: var(--max-w-wide);
     margin: 0 auto;
@@ -591,3 +591,271 @@ figcaption .tag {
 .flex { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
 .muted { color: var(--text-dim); }
 .center { text-align: center; }
+
+/* ============================================================
+ * Tab-based shell: entry overlay, sidebar, view router.
+ * Added in v1.1 — see WEB_PROMPT.md §6.0 and BRAINSTORM.md
+ * "Navigation & entry animation".
+ * ============================================================ */
+
+/* -------- Entry overlay (first-load boot plate + load bar, ~2s total) --------
+ * Timeline:
+ *    0 –  400 ms  title fades up
+ *  200 –  480 ms  progress track quietly fades in
+ *  400 – 1600 ms  orange fill scaleX 0 → 1 (left-to-right load)
+ * 1600 – 2000 ms  overlay wipes horizontally off-screen (same direction)
+ * JS flips body.is-loaded at 2000 ms; sidebar + hero stagger follow.
+ */
+.entry-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    background: var(--bg);
+    display: grid;
+    place-items: center;
+    will-change: transform;
+    animation: overlay-wipe 400ms var(--ease) 1600ms forwards;
+}
+.entry-overlay::before {
+    /* quiet grid + radial tint that matches the hero aesthetic */
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image:
+        linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+    background-size: 64px 64px;
+    mask-image: radial-gradient(ellipse at center, black 10%, transparent 60%);
+    pointer-events: none;
+}
+.entry-stack {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 28px;
+    padding: 0 24px;
+    max-width: 92vw;
+}
+.entry-title {
+    font-family: var(--font-mono);
+    font-size: clamp(22px, 4vw, 44px);
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text);
+    text-align: center;
+    line-height: 1.25;
+    opacity: 0;
+    transform: translateY(8px);
+    animation: entry-title-in 400ms var(--ease) 0ms forwards;
+}
+.entry-progress {
+    position: relative;
+    width: clamp(220px, 30vw, 340px);
+    height: 3px;
+    border-radius: 2px;
+    background: rgba(255, 255, 255, 0.08);
+    overflow: hidden;
+    opacity: 0;
+    animation: entry-fade-in 280ms var(--ease) 200ms forwards;
+}
+.entry-progress-fill {
+    position: absolute;
+    inset: 0;
+    background: var(--c-orange);
+    box-shadow: 0 0 12px rgba(255, 106, 61, 0.55);
+    transform: scaleX(0);
+    transform-origin: left center;
+    animation: entry-fill 1200ms var(--ease) 400ms forwards;
+}
+@keyframes entry-title-in {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes entry-fade-in {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+@keyframes entry-fill {
+    from { transform: scaleX(0); }
+    to   { transform: scaleX(1); }
+}
+@keyframes overlay-wipe {
+    from { transform: translateX(0); }
+    to   { transform: translateX(-101%); }
+}
+
+/* -------- App shell (sidebar column + main views) -------- */
+body {
+    --sidebar-w: 240px;
+    padding-left: var(--sidebar-w);
+}
+
+.sidebar {
+    position: fixed;
+    top: 0; left: 0;
+    width: var(--sidebar-w);
+    height: 100vh;
+    background: var(--bg);
+    border-right: 1px solid var(--rule-soft);
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    padding: 28px 14px 20px;
+    z-index: 100;
+    transform: translateX(-100%);
+    transition: transform 360ms var(--ease) 120ms;
+}
+body.is-loaded .sidebar { transform: translateX(0); }
+
+.sidebar-head .logo {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.16em;
+    line-height: 1.6;
+    color: var(--text);
+    text-transform: uppercase;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 2px 6px 22px;
+    border-bottom: 1px solid var(--rule-soft);
+}
+.sidebar-head .logo::before {
+    content: '';
+    width: 8px; height: 8px;
+    border-radius: 2px;
+    background: var(--c-orange);
+    box-shadow: 0 0 10px rgba(255, 106, 61, 0.6);
+    flex-shrink: 0;
+}
+
+.tab-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding-top: 20px;
+    align-self: start;
+}
+.tab-link {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    padding: 10px 12px 10px 14px;
+    color: var(--text-dim);
+    border: none;
+    border-left: 2px solid transparent;
+    margin-left: -2px;
+    border-radius: 0 6px 6px 0;
+    text-decoration: none;
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    transition: color var(--dur-fast) var(--ease),
+                background var(--dur-fast) var(--ease),
+                border-color var(--dur-fast) var(--ease);
+}
+.tab-link:hover { color: var(--text); background: var(--surface); }
+.tab-link.is-active {
+    color: var(--text);
+    border-left-color: var(--c-orange);
+    background: var(--surface);
+}
+.tab-link .tab-num {
+    color: var(--text-mute);
+    font-size: 10px;
+    min-width: 22px;
+    font-variant-numeric: tabular-nums;
+}
+.tab-link.is-active .tab-num { color: var(--c-orange); }
+.tab-link.tab-home .tab-num { color: var(--c-orange); font-size: 12px; }
+.tab-rule { height: 1px; background: var(--rule-soft); margin: 12px 10px; }
+
+.sidebar-foot { padding-top: 16px; border-top: 1px solid var(--rule-soft); }
+.sidebar-foot .live-readout {
+    font-size: 10px;
+    padding: 6px 10px;
+    width: 100%;
+    justify-content: center;
+    letter-spacing: 0.1em;
+}
+
+/* -------- Views (tab container) -------- */
+main.views {
+    position: relative;
+    min-height: 100vh;
+}
+.view {
+    display: none;
+    opacity: 0;
+    transition: opacity var(--dur-mid) var(--ease);
+}
+.view.is-active { display: block; }
+.view-home.is-active { display: grid; }
+.view.is-active.is-ready { opacity: 1; }
+
+/* -------- Landing (home) content entrance — staggered after overlay -------- */
+.view-home .hero-body,
+.view-home .anchor-nav {
+    opacity: 0;
+    transform: translateY(8px);
+    transition: opacity var(--dur-slow) var(--ease),
+                transform var(--dur-slow) var(--ease);
+}
+.view-home .hero-body { transition-delay: 180ms; }
+.view-home .anchor-nav { transition-delay: 320ms; }
+body.is-loaded .view-home .hero-body,
+body.is-loaded .view-home .anchor-nav {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* -------- Mobile / narrow (sidebar becomes a top bar) -------- */
+@media (max-width: 860px) {
+    body { --sidebar-w: 0px; padding-left: 0; padding-top: 56px; }
+    .sidebar {
+        width: 100%;
+        height: 56px;
+        padding: 6px 12px;
+        grid-template-rows: none;
+        grid-template-columns: auto 1fr auto;
+        gap: 10px;
+        border-right: none;
+        border-bottom: 1px solid var(--rule-soft);
+        transform: translateY(-100%);
+    }
+    body.is-loaded .sidebar { transform: translateY(0); }
+    .sidebar-head .logo { padding: 0 6px; border-bottom: none; font-size: 9px; white-space: nowrap; }
+    .sidebar-head .logo br { display: none; }
+    .tab-nav {
+        flex-direction: row;
+        padding: 0;
+        gap: 0;
+        overflow-x: auto;
+        align-items: center;
+        scrollbar-width: none;
+    }
+    .tab-nav::-webkit-scrollbar { display: none; }
+    .tab-link {
+        padding: 6px 10px;
+        border-left: none;
+        border-bottom: 2px solid transparent;
+        border-radius: 6px 6px 0 0;
+        margin-left: 0;
+    }
+    .tab-link.is-active {
+        border-left: none;
+        border-bottom-color: var(--c-orange);
+    }
+    .tab-rule, .sidebar-foot { display: none; }
+}
+
+/* -------- Reduced motion — overlay + transitions off -------- */
+@media (prefers-reduced-motion: reduce) {
+    .entry-overlay { display: none !important; }
+    .sidebar { transform: none !important; transition: none !important; }
+    .view-home .hero-body,
+    .view-home .anchor-nav { opacity: 1; transform: none; transition: none; }
+    .view { transition: none !important; }
+}

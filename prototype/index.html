@@ -10,26 +10,49 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" />
 
-    <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="styles.css?v=1.2" />
 
     <script type="module" src="components/sweep-slider/sweep-slider.js"></script>
     <script type="module" src="components/method-toggle/method-toggle.js"></script>
     <script type="module" src="components/layout-gallery/layout-gallery.js"></script>
     <script type="module" src="components/layout-viewer/layout-viewer.js"></script>
     <script type="module" src="components/interference-sandbox/interference-sandbox.js"></script>
-    <script type="module" src="script.js"></script>
+    <script type="module" src="script.js?v=1.2"></script>
 </head>
 <body>
-    <main>
-        <!-- ============================================================
-             HERO
-             ============================================================ -->
-        <header class="hero">
-            <div class="hero-topbar">
-                <span class="logo">Wireless Power Control · Capstone</span>
-                <span class="live-readout">● LIVE · GNN inference ~<span class="num" data-live-ms>58</span>ms</span>
-            </div>
+    <!-- Entry overlay — title plate + orange load bar, wipes off after ~2s (see script.js) -->
+    <div class="entry-overlay" aria-hidden="true">
+        <div class="entry-stack">
+            <span class="entry-title">Wireless Power Control · Capstone</span>
+            <div class="entry-progress" aria-hidden="true"><span class="entry-progress-fill"></span></div>
+        </div>
+    </div>
 
+    <!-- Persistent left sidebar / tab navigation -->
+    <aside class="sidebar" aria-label="Primary navigation">
+        <div class="sidebar-head">
+            <span class="logo">Wireless Power<br />Control · Capstone</span>
+        </div>
+        <nav class="tab-nav">
+            <a href="#home" class="tab-link tab-home" data-view="home"><span class="tab-num">◀</span>Home</a>
+            <div class="tab-rule" aria-hidden="true"></div>
+            <a href="#problem" class="tab-link" data-view="problem"><span class="tab-num">01</span>Problem</a>
+            <a href="#d2d" class="tab-link" data-view="d2d"><span class="tab-num">02</span>D2D</a>
+            <a href="#method" class="tab-link" data-view="method"><span class="tab-num">03</span>Method</a>
+            <a href="#jsac" class="tab-link" data-view="jsac"><span class="tab-num">04</span>JSAC</a>
+            <a href="#deepdive" class="tab-link" data-view="deepdive"><span class="tab-num">05</span>Deep dive</a>
+            <a href="#refs" class="tab-link" data-view="refs"><span class="tab-num">06</span>References</a>
+        </nav>
+        <div class="sidebar-foot">
+            <span class="live-readout">● LIVE · GNN ~<span class="num" data-live-ms>58</span>ms</span>
+        </div>
+    </aside>
+
+    <main class="views">
+        <!-- ============================================================
+             HOME · Landing view
+             ============================================================ -->
+        <section class="view view-home hero" id="home" data-view="home">
             <div class="hero-body">
                 <span class="eyebrow">Capstone · 2026</span>
                 <h1>Approximating WMMSE with <span class="accent">graph neural networks</span> — for the classical interference channel, and for joint sensing-and-communication.</h1>
@@ -45,7 +68,7 @@
                 </div>
             </div>
 
-            <nav class="anchor-nav" aria-label="Section navigation">
+            <nav class="anchor-nav" aria-label="Enter the showcase">
                 <a href="#problem"><span class="num">01</span>Problem</a>
                 <a href="#d2d"><span class="num">02</span>D2D</a>
                 <a href="#method"><span class="num">03</span>Method</a>
@@ -53,12 +76,12 @@
                 <a href="#deepdive"><span class="num">05</span>Deep dive</a>
                 <a href="#refs"><span class="num">06</span>References</a>
             </nav>
-        </header>
+        </section>
 
         <!-- ============================================================
              01 · PROBLEM
              ============================================================ -->
-        <section id="problem" class="section section--narrow">
+        <section class="view section section--narrow" id="problem" data-view="problem">
             <div class="section-head reveal">
                 <span class="num-label">Section · 01</span>
                 <h2>The interference channel, and a solver that's too slow to deploy.</h2>
@@ -129,7 +152,7 @@
         <!-- ============================================================
              02 · D2D  (Foundation)
              ============================================================ -->
-        <section id="d2d" class="section">
+        <section class="view section" id="d2d" data-view="d2d">
             <div class="section-head reveal">
                 <span class="num-label">Section · 02 · Foundation</span>
                 <h2>Scenario 1 · Device-to-device. Where the GNN earned the problem.</h2>
@@ -326,7 +349,7 @@
         <!-- ============================================================
              03 · METHOD BRIDGE
              ============================================================ -->
-        <section id="method" class="section section--narrow">
+        <section class="view section section--narrow" id="method" data-view="method">
             <div class="section-head reveal">
                 <span class="num-label">Section · 03 · Method</span>
                 <h2>Why a graph network &mdash; one module, every link.</h2>
@@ -359,7 +382,7 @@
         <!-- ============================================================
              04 · JSAC (Application)
              ============================================================ -->
-        <section id="jsac" class="section">
+        <section class="view section" id="jsac" data-view="jsac">
             <div class="section-head reveal">
                 <span class="num-label">Section · 04 · Application</span>
                 <h2>Scenario 2 · Joint sensing &amp; communication. The GNN on a harder problem.</h2>
@@ -588,7 +611,7 @@
         <!-- ============================================================
              05 · DEEP DIVE
              ============================================================ -->
-        <section id="deepdive" class="section">
+        <section class="view section" id="deepdive" data-view="deepdive">
             <div class="section-head reveal">
                 <span class="num-label">Section · 05 · Deep dive</span>
                 <h2>Power allocations, up close. Drag, nudge, feel the physics.</h2>
@@ -612,7 +635,7 @@
         <!-- ============================================================
              06 · REFERENCES
              ============================================================ -->
-        <section id="refs" class="section section--narrow">
+        <section class="view section section--narrow" id="refs" data-view="refs">
             <div class="section-head reveal">
                 <span class="num-label">Section · 06</span>
                 <h2>References.</h2>
