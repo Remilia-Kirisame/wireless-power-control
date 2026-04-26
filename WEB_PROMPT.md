@@ -56,17 +56,16 @@ Copy should be **concise, precise, understated**. No marketing exclamations. No 
 
 Reference tone: Linear, Vercel, Anthropic docs, research-lab microsites. Looks *built*, not *typeset*.
 
-**Color (dark by default).**
-- Background: `#0a0b0e` (page), `#14161c` (panel/card surface).
-- Body text: `#e8e8ea`. Secondary: `#9a9aa0`. Tertiary / rule lines: `rgba(255,255,255,0.06–0.10)`.
-- Scenario accents (source of truth = `Scenario_JSAC/main.py:393`, saturation-nudged for dark):
-  - `Blue #4DA3FF` — WMMSE baseline, Blue-car Tx.
-  - `Orange #FF6A3D` — GNN (primary accent).
-  - `Yellow #F6C445` — Yellow / sensing links.
-  - `Green #4CAF50` — Green / communication links.
-  - `Grey #888888` — Naive / equal power.
-  - `Violet #B265D9` — DNN (new; D2D only).
-- A single near-neutral steel tone (`#2a2e3a`) for UI chrome (tabs, inactive buttons).
+**Color (dark by default).** Near-black page (`--bg`) with a slightly lighter panel surface (`--surface`); high-contrast off-white body (`--text`), muted grey secondary (`--text-dim`), faint rule lines via `--rule`. Scenario accents (source of truth = `Scenario_JSAC/main.py:393`, saturation-nudged for dark):
+
+- `--c-blue` — WMMSE baseline / Blue-car Tx.
+- `--c-orange` — GNN, primary accent.
+- `--c-yellow` — Yellow / sensing links.
+- `--c-green` — Green / communication links.
+- `--c-grey` — Naive / equal power.
+- `--c-violet` — DNN (new; D2D only).
+
+A single near-neutral steel tone for UI chrome (tabs, inactive buttons). Canonical hex values for all tokens live in §10.
 
 **Typography.**
 - Display / headings: **Inter** or **Geist** (600–700 weight, tight tracking `-0.01em`). Fallback stack includes `system-ui`, `-apple-system`, `Segoe UI`.
@@ -80,8 +79,7 @@ Reference tone: Linear, Vercel, Anthropic docs, research-lab microsites. Looks *
 - Sparing accent glow: soft radial tint behind the hero; faint colored halo around the *active* chart line. Never neon-party — "data center at 2am."
 - Grid-based layout (not single column). Hero full-bleed; content in a ~1200px max container; figures can break out to ~1100px.
 - Motion as signal: fade + 4–8px rise on view/reveal entry (≤300ms, `cubic-bezier(0.2, 0.8, 0.2, 1)`). Chart lines draw-in once on enter. Method toggles crossfade ~200ms. Nothing bounces or spins. **Disable all of it under `prefers-reduced-motion: reduce`.**
-- **Entry overlay (first load only).** Full-viewport panel in `--bg` carrying a centered **large mono-uppercase title plate** ("WIRELESS POWER CONTROL · CAPSTONE") and a **thin orange load bar** below it that fills left-to-right over ~1200ms. When the fill completes, the overlay wipes horizontally off-screen (~400ms, same easing); total ~2.0s. Sidebar slides in afterward (~360ms). Under `prefers-reduced-motion`, overlay is hidden instantly.
-- **Tab crossfade.** Switching views fades the current view out (~160ms) then fades the next one in (~160ms) — total ~320ms. Under `prefers-reduced-motion`, the swap is instantaneous.
+- **Entry overlay** (first load only): boot-plate title plate + horizontal orange load bar, then wipe-off reveal, then sidebar slide-in. **Tab crossfade** between views (~320ms total). Both gated by `prefers-reduced-motion`. Full choreography (timings, easing, exact step order) in §6.0.
 
 **Data-native chrome.**
 - Monospace axis ticks and metric labels.
@@ -144,7 +142,7 @@ Full-bleed, ~90vh inside the view. This is the default view on first load — th
 - Author line: render the literal tokens **`{{AUTHOR_NAME}}`, `{{AFFILIATION}}`, `{{DATE}}`** in the HTML. Do not invent values; leave them as `{{…}}` so the user can find-and-replace afterward. Style them as if the real values were present (same typography, same layout) so the hero still looks finished.
 - Anchor row: monospace chips linking to each major section (`01 · PROBLEM`, `02 · D2D`, `03 · METHOD`, `04 · JSAC`, `05 · DEEP DIVE`, `06 · REFS`). These duplicate the sidebar tabs but read as a "enter the showcase" call-to-action from the landing view; clicking one routes through the same hash-based view switcher as the sidebar.
 - Soft radial orange glow bottom-right; subtle grid or scanline overlay is OK if it stays quiet.
-- The old hero "topbar" with logo + live-readout is **removed** — both live in the sidebar now.
+- No separate topbar — the logo block and live-readout pill live in the sidebar.
 
 ### 6.2 Problem (01)
 Why this problem matters; why WMMSE's speed cost is real.
@@ -177,7 +175,7 @@ The GNN handed a harder problem.
 ### 6.6 Deep dive (05)
 Lower-density. Two sub-panels:
 - **JSAC** — three charts from `jsac_deep_dive.png` (per-link power bars with Yellow/Green colored, per-group budget utilization violin, Green-vs-Yellow power-share box) + a strip of layout snapshots using **widget A** (see §7).
-- **D2D (QoS)** — a smaller strip: for the unconstrained and the constrained cases, plot CDF of per-user rate with the `r_min` threshold overlaid. Optional for v1 if data export is painful.
+- **D2D (QoS)** — a smaller strip: for the unconstrained and the constrained cases, plot CDF of per-user rate with the `r_min` threshold overlaid. Optional for v1.
 
 ### 6.7 References (06)
 Monospaced bibliography block. The three papers from `README.md` (W1P1, W2P2, W4P2) with clickable DOIs rendered in accent color. Footer-scale type, `letter-spacing: 0.04em`.
@@ -291,14 +289,9 @@ From `save_test/test_jsac_results.pkl` + layout snapshots: export **3–6 repres
 ### 8.3 Figures as SVG
 Prefer exporting the polished matplotlib figures as **SVG** (`plt.savefig('x.svg')`) into `{{SITE_DIR}}/assets/images/`. Raster PNGs are acceptable only for the layout snapshots (where scatter density makes SVG bloated).
 
-### 8.4 When an asset doesn't exist yet — use the placeholder
-An image placeholder already lives in the existing reference scaffold at `site/assets/images/placeholder.svg` (a 120×120 generic "picture" glyph). **Copy that file into `{{SITE_DIR}}/assets/images/placeholder.svg` as the first step of your build**, and use it whenever the image this spec references hasn't been produced yet. Concretely:
+### 8.4 Last-resort placeholder
 
-- In HTML, reference it: `<img src="assets/images/placeholder.svg" alt="(TODO: jsac_deep_dive figure)" />`.
-- Leave an HTML comment next to it: `<!-- TODO: export jsac_deep_dive.svg from Scenario_JSAC/save_test/ -->` — so a later pass knows what to replace.
-- **Do not delete the `<img>` element.** Do not fabricate image content as inline SVG or data URIs unless the figure is genuinely meant to be drawn in the browser (widgets A–E are the exception — they *build* SVG at runtime and that's the point).
-
-Same idea for missing JSON data: if an `export_for_site.py` run can't produce a file because the upstream pickle is absent, write a **stub JSON** with the correct top-level shape and a `"_stub": true` marker, so components render an empty state (the mono `offline — open via \`python -m http.server\`` message pattern from §7) instead of throwing. Print a clear warning from the export script naming exactly which `python Scenario_*/main.py` run would regenerate the missing pickle.
+If a figure genuinely can't be produced by the export pipeline, fall back to `site/assets/images/placeholder.svg` (copy it into `{{SITE_DIR}}/assets/images/`) embedded as `<img>` with a TODO alt text. For missing JSON, write a stub with `"_stub": true` so components render an empty state instead of throwing. Both should be rare in practice.
 
 ---
 
@@ -427,4 +420,4 @@ A reviewer should be able to answer *yes* to each:
 
 ## 14. One-liner restatement (the prompt to hand the AI)
 
-> Build `{{SITE_DIR}}/` (directory name supplied by the user at invocation — do **not** build into the existing `site/`, which is a read-only reference scaffold) — a polished, offline, **tab-based single-HTML-file** static showcase for a wireless-power-allocation capstone. Plain HTML/CSS/JS, no framework, no build step. Seven views (Home + `01 Problem … 06 References`) with a persistent left sidebar, a hash-based tab router (~40 lines of vanilla JS), and an overlay wipe-away entry animation on first load; tab swaps crossfade ~320ms; everything disabled under `prefers-reduced-motion`. Dark modern-tech aesthetic (Linear / Vercel / Anthropic-docs reference). Tell the two-scenario story: **D2D (DNN-vs-GNN scaling finding) → method bridge → JSAC (constrained application)** → deep dive → refs. Ship five Web Components (Shadow DOM): `<sweep-slider>` used twice (D2D K-scaling + JSAC B-sweep), `<method-toggle>` for in-chart series filtering, `<layout-gallery>` for JSAC snapshots, `<layout-viewer>` for single-layout SVG maps, `<interference-sandbox>` for drag-a-Tx channel physics. Read pre-exported JSONs from `{{SITE_DIR}}/assets/data/` (write `Scenario_{D2D,JSAC}/export_for_site.py` helpers to produce them). Respect `prefers-reduced-motion`; keyboard-navigate every widget; `COLORS` palette from `Scenario_JSAC/main.py:393` nudged for dark. See `WEB_PROMPT.md` §6.0 for the exact shell choreography.
+> Build `{{SITE_DIR}}/` (directory supplied at invocation — **not** the existing `site/`, which is read-only reference) — a polished, offline, **tab-based single-HTML-file** static showcase for a wireless-power-allocation capstone. Plain HTML/CSS/JS, no framework, no build step. Seven views (Home + 01–06) with a left sidebar, hash-based tab router, boot-plate overlay entry animation, and tab crossfades — all gated by `prefers-reduced-motion`. Dark modern-tech aesthetic. Narrative: **D2D scaling finding → method bridge → JSAC application → deep dive → refs**. Ship five Shadow-DOM Web Components: `<sweep-slider>` (used twice), `<method-toggle>`, `<layout-gallery>`, `<layout-viewer>`, `<interference-sandbox>`. Reads pre-exported JSON from `assets/data/` (helpers in `Scenario_{D2D,JSAC}/export_for_site.py`). Keyboard-navigate every widget; `COLORS` palette from `Scenario_JSAC/main.py:393` nudged for dark. See §6.0 for shell choreography, §5/§10 for vibe + tokens, §7 for widget specs.

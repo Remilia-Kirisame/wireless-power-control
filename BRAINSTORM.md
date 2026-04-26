@@ -69,38 +69,36 @@ Both C and C′ share the same component pattern — a slider + a small multi-li
 
 ### Navigation & entry animation
 
-The v1.1 shell replaces the single scrolling page with a **multi-view, tab-based SPA** (still one HTML file, still no framework — just a ~40-line hash router in `script.js`).
+Decided on a **multi-view, tab-based SPA** instead of a single scrolling page (still one HTML file, no framework — just a hash router in `script.js`).
 
-- **Landing view (Home).** On first load, the reader sees the hero content only — title, tagline, author/affiliation/date, soft orange radial glow. No stacked sections below; the six numbered sections live behind tabs.
-- **Entrance animation — option 2, boot-plate overlay with load bar.** A full-viewport overlay (same near-black as `--bg`) carries two elements, stacked and centered: a **large monospace title plate** ("WIRELESS POWER CONTROL · CAPSTONE", uppercase, tracked `~0.12em`, `clamp(22px, 4vw, 44px)`) that fades up first (~400ms), and below it a **thin horizontal track** (~220–340px wide, 3px tall) whose **orange fill grows from left to right** over ~1200ms, reading as a load gauge. Once the fill completes, the overlay **wipes horizontally off-screen** (~400ms, `cubic-bezier(0.2, 0.8, 0.2, 1)`, same direction the bar traced) to reveal the home view. Total overlay budget: ~2.0s; the left sidebar then slides in (~360ms) and the hero title + anchor row fade up with short stagger delays (~180ms + 320ms). Skipped entirely under `prefers-reduced-motion: reduce`.
-- **Left sidebar.** Persistent after the entry animation. Contains, top-to-bottom: a small monospaced logo block; a `◀ Home` link; a thin divider; the six numbered section links (`01 · Problem … 06 · References`); and a small `● LIVE · GNN ~58ms`-style metric pill at the bottom. ~240px wide on desktop; collapses to a horizontal top bar on <860px.
-- **Tab switching.** Clicking a sidebar link updates `location.hash`; the router listens to `hashchange` and runs a two-phase fade (~160ms out, ~160ms in — total ~320ms) between views. URLs are deep-linkable (`#problem`, `#d2d`, …) and the browser back button works without extra code. Under `prefers-reduced-motion`, the swap is instantaneous.
-- **Per-view reveals.** The existing `.reveal` fade-up pattern still applies, but fires when a view *activates* (all `.reveal` children of the entering view get `is-visible`) rather than on scroll — each view is short enough that staggering per element isn't needed.
+- **Landing view (Home).** Hero only on first load; the six numbered sections live behind tabs.
+- **Entrance animation — boot-plate overlay with load bar.** A full-viewport overlay carries a centered uppercase title plate and a thin orange load bar that fills left-to-right; once full, the overlay wipes horizontally off-screen to reveal Home, and the left sidebar slides in. Skipped under `prefers-reduced-motion`.
+- **Left sidebar (persistent after entry).** Mono logo block, `◀ Home`, six numbered section links, a small `● LIVE`-style metric pill at the bottom. Collapses to a horizontal top bar on narrow screens.
+- **Tab switching.** Hash-based, deep-linkable, browser back works. Crossfade between views; instantaneous under `prefers-reduced-motion`.
+- **Per-view reveals.** Fade-up reveals fire when a view *activates*, not on scroll — each view is short enough that staggering is unnecessary.
+
+Exact timings, widths, and easing live in `WEB_PROMPT.md §6.0`.
 
 **Future improvement — option 3 (canvas/SVG title animation).** Instead of a flat horizontal wipe, build the entrance as a slowly-resolving "interference field" that condenses into the title: animated particle dots or a noisy heat-map over canvas that crystallises into the logo mark as the overlay dissolves. Character-by-character reveal for the title, timed to the field clearing. Higher wow-factor but easily half a day to a day of polish — keep in the sandbox queue, ship v1.1 with the flat wipe.
 
 ### Vibe
 
-**"Modern, cool-tech feel."** Think Linear / Vercel / Anthropic docs / research-lab microsites — the look of a thing that was *built*, not *typeset*. Concretely:
+**"Modern, cool-tech feel."** Reference points: Linear / Vercel / Anthropic docs / research-lab microsites — the look of a thing that was *built*, not *typeset*.
 
-- **Dark by default.** Deep near-black background (`#0a0b0e`–`#111218`), high-contrast off-white body (`~#e8e8ea`), muted grey for secondary text. A light-mode toggle is optional; the canonical version is dark.
-- **Typography.** Geometric sans for headings (Inter / Geist / Space Grotesk, tight tracking, 600–700 weight), clean sans for body (Inter, 400–500), **monospace accents** (JetBrains Mono / IBM Plex Mono / Geist Mono) for eyebrows, labels, code, numeric readouts, and axis ticks. Monospace is the "this is technical" tell; use it liberally for small metadata.
-- **Palette — keep the codebase scenario colors, reframe them as accents on dark.** `Blue #2196F3` (WMMSE / Blue cars / Tx), `Orange #FF5722` (GNN / primary accent), `Yellow #F6C445` (sensing), `Green #4CAF50` (comm), `#888888` (naive) — from `COLORS` in `Scenario_JSAC/main.py:393`. On dark, nudge saturation: GNN-orange can run slightly hotter (`#FF6A3D`), WMMSE-blue slightly cooler (`#4DA3FF`). Add one or two near-neutral steel tones for UI chrome.
-- **Surfaces & depth.** One or two elevation levels via subtle 1px borders (`rgba(255,255,255,0.06)`) and very quiet inner glows — not drop-shadows. Cards, charts, and interactive panels sit on faint panels (`#141620`-ish) against the near-black background. Rounded corners 8–12px.
-- **Accent glow.** Sparingly: a soft radial tint behind the hero, a faint colored halo around the primary CTA / active chart line. Never neon-party; think "data center at 2am."
-- **Grid, not column.** Break out of the single-column poster feel. Use a responsive grid — hero spans full width, results panels can be 2-up / 3-up, figures can go full-bleed. Generous negative space.
-- **Motion as signal, not decoration.** Tiny reveals on scroll (fade + 4–8px rise, ≤300ms, easing `cubic-bezier(0.2, 0.8, 0.2, 1)`). Chart lines draw in once when they enter the viewport. Toggling a method crossfades in ~200ms. Nothing bounces, nothing spins. Respect `prefers-reduced-motion`.
-- **Data-native UI chrome.** Small live-looking touches that signal "this is engineering": monospace axis ticks, numeric readouts with tabular figures (`font-variant-numeric: tabular-nums`), a tiny status dot next to "GNN inference: 8.2ms" style metrics, keyboard hint pills (`[ / ]` to navigate), command-palette aesthetic for any search/filter.
-- **Interactivity framing.** Every interactive widget labels itself — a small eyebrow that says "interactive · drag to explore" or "live data · topology sweep" — so the reader knows to engage.
-- **Typography scale.** Display (hero): ~clamp(40px, 6vw, 84px), tight leading, tight tracking. H2: ~28–32px. Body: 16–17px, line-height 1.65. Captions / eyebrows: 12–13px mono, tracked out `0.08–0.14em`.
-- **Footer.** A references list rendered like a bibliography but styled as a monospaced block — DOIs rendered as links in the accent color.
+- **Dark canonical**, high-contrast off-white body, muted grey secondary. Light-mode toggle optional.
+- **Typography.** Geometric sans for headings, clean sans for body, **monospace accents** for eyebrows, axis ticks, numeric readouts, and keyboard hints — the "this is technical" tell.
+- **Palette = codebase scenario colors as accents on dark.** Blue (WMMSE / Blue-car Tx), Orange (GNN, primary accent), Yellow (sensing), Green (comm), grey (naive) — from `COLORS` in `Scenario_JSAC/main.py:393`, saturation nudged for dark. Add a violet accent for the D2D DNN.
+- **Surfaces.** Faint panels with 1px borders and very quiet inner glows — no drop-shadows. Sparing accent glow (soft radial behind the hero, faint halo on the active chart line). "Data center at 2am," not neon-party.
+- **Grid, not single column.** Generous negative space; figures can break out wide.
+- **Motion as signal, not decoration.** Reveals on view enter, chart lines draw in once, method toggles crossfade. Nothing bounces or spins. Respect `prefers-reduced-motion`.
+- **Data-native chrome.** Mono ticks, tabular-nums readouts, status dots, keyboard hint pills, `interactive · drag to explore` eyebrows on widgets.
+- **Footer.** Bibliography-style monospaced block; DOIs as accent-colored links.
 
-What to avoid: gradients-as-backgrounds, pastel watercolor blobs, playful illustrations, heavy shadows, anything that reads "marketing landing page."
+What to avoid: gradients-as-backgrounds, pastel blobs, playful illustrations, drop shadows, anything reading "marketing landing page."
 
-### What goes into `site/` vs `sandbox/`
+Hex codes, font scales, exact timings, and CSS tokens live in `WEB_PROMPT.md §5 + §10`.
 
-- `site/` — the polished one-page showcase. Build toward the v1 scope above.
-- `sandbox/` — a scratch area. Same scaffold, no commitment to polish. Use it to try ideas D/E/F before promoting anything to `site/`. For the first pass, the sandbox will implement a **small "clean academic poster" demo**: hero card + a JSAC layout SVG + a method-comparison bar chart rendered from a tiny hard-coded results object. That proves the stack works end-to-end without a build step.
+
 
 ### Open questions to resolve before v1
 
