@@ -174,7 +174,7 @@ The GNN handed a harder problem.
 
 ### 6.6 Deep dive (05)
 Lower-density. Two sub-panels:
-- **JSAC** — three charts from `jsac_deep_dive.png` (per-link power bars with Yellow/Green colored, per-group budget utilization violin, Green-vs-Yellow power-share box) + a strip of layout snapshots using **widget A** (see §7).
+- **JSAC** — three charts from `jsac_deep_dive.png` (per-link power bars with Yellow/Green colored, per-group budget utilization violin, Green-vs-Yellow power-share box) + a single `<layout-viewer>` (widget D) for one-layout deep inspection. The multi-seed `<layout-gallery>` (widget A) lives in §6.5 instead.
 - **D2D (QoS)** — a smaller strip: for the unconstrained and the constrained cases, plot CDF of per-user rate with the `r_min` threshold overlaid. Optional for v1.
 
 ### 6.7 References (06)
@@ -195,12 +195,9 @@ Build all five. Each is a **Web Component (custom element)** with its own folder
 - Must respect `prefers-reduced-motion`: swap animated transitions for instantaneous state changes when the media query matches.
 - Loading state: render a quiet skeleton until JSON resolves; if `fetch` fails, render the eyebrow text + a mono `offline — open via \`python -m http.server\`` message in the tertiary text color. Do **not** throw.
 
-### A. `<layout-gallery>` — JSAC layout snapshot browser *(easy)*
-Carousel of pre-rendered layout snapshots, cycling through a handful of seeds. For each snapshot, three method views (Naive / WMMSE / GNN) crossfade when the method toggle changes. Rx dot *brightness* encodes allocated power.
-- Inputs: `{{SITE_DIR}}/assets/images/layouts/jsac_seed{01..N}_{naive|wmmse|gnn}.svg` (or PNG).
-- Controls: prev/next arrows, method toggle (segmented control), thumbnail strip.
-- Data file (optional metadata): `{{SITE_DIR}}/assets/data/layouts_index.json` with `[{seed, config, metrics_per_method}]`.
-- Keyboard: `←/→` to navigate, `1/2/3` to switch method.
+### A. `<layout-gallery>` — JSAC layout carousel *(easy)*
+Wraps `<layout-viewer>` (§7.D) and adds seed navigation: prev/next arrows, one thumb chip per seed, `←/→` keyboard nav. `1/2/3` switches the embedded viewer's method. The viewer's method toggle and three isolation modes carry through unchanged. Lives in the JSAC view (§6.5). Resets isolation when switching seeds.
+- Inputs: `{{SITE_DIR}}/assets/data/layouts_index.json` — `[{id, config, path, metrics}]`; each `path` points to a layout JSON in §7.D shape (no pre-rendered snapshot images needed).
 
 ### B. `<method-toggle>` — in-chart method filter *(easy)*
 A segmented-control component that, when placed above or inside an SVG chart, toggles visibility of individual series with a 200ms crossfade. Emits a `change` custom event. Used in both Section 6.3.3 (D2D scaling) and Section 6.5.3 (JSAC sweep charts).
@@ -221,7 +218,15 @@ Behavior:
 C′ is the highest-leverage widget on the page — treat it as a first-class deliverable, not a variant.
 
 ### D. `<layout-viewer>` — SVG power-allocation map *(medium)*
-Render one layout as an SVG map. Toggle between methods; Rx marker size *and* brightness encode allocated power; edges colored by link type; clicking a Blue-car highlights only its cluster and dims the rest.
+Render one layout as an SVG map. Method toggle (Naive/WMMSE/GNN). Rx are **solid filled discs at constant radius**; power encodes via **dot opacity + glow halo opacity** (size no longer encodes power). Intra-cluster edges colored by link type; inter-cluster interference as dashed grey lines (with an invisible wider hit overlay so they're clickable).
+
+Three mutually-exclusive **click-isolation modes**, all toggle off on a second click of the same target; clicking empty field clears:
+- **Cluster** — click a Blue Tx → its cluster stays bright + every interference line touching it; everything else dims.
+- **Channel** — click an Rx → clicked Rx + its home Tx full-bright, same-channel peer Rx + their home Tx at half-bright (context); only the clicked Rx's intra-link and incoming leakage lines are drawn.
+- **Edge** — click an interference dashed line → surgical: just the single Tx_A→Rx_B leakage, plus Rx_B's home Tx and the Tx_B→Rx_B intended intra-link.
+
+Rendering tunables (radius, dot/glow opacities, edge opacities, hit widths) are module-level `const`s at the top of `layout-viewer.js`.
+
 - Input: `{{SITE_DIR}}/assets/data/layouts/jsac_layout_{id}.json`, shape:
   ```jsonc
   {
