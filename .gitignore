@@ -24,6 +24,8 @@ venv/
 CLAUDE.md
 GEMINI.md
 .claude/
+AGENTS.md
+.codex/
 
 # Trained models & pickled results (regenerable from code + seed)
 # First, ignore the contents of these directories but NOT the directories themselves
