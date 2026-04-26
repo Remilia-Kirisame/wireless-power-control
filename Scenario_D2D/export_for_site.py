@@ -1,7 +1,8 @@
-"""Export D2D pickles to JSON for the static showcase site.
+"""Export D2D pickles to JSON (and one SVG figure) for the static showcase site.
 
 Run from this directory:
     python export_for_site.py [--out ../prototype/assets/data]
+                              [--figures-out ../prototype/assets/images/figures]
 
 Reads:
     saves/simulation_results.pkl            (no-QoS sweep over K)
@@ -10,6 +11,9 @@ Reads:
 Writes to <out>/:
     d2d_sweep_K.json   (main D2D scaling finding — WMMSE / GNN / DNN across K)
     d2d_qos.json       (optional — CDFs for QoS variants)
+
+Writes to <figures-out>/:
+    d2d_qos_cdf.svg    (optional — site-styled CDF figure, matches dark palette)
 """
 
 from __future__ import annotations
@@ -24,6 +28,22 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 DEFAULT_OUT = (HERE / ".." / "prototype" / "assets" / "data").resolve()
+DEFAULT_FIGURES_OUT = (HERE / ".." / "prototype" / "assets" / "images" / "figures").resolve()
+
+# Site palette (matches prototype/styles.css :root tokens).
+SITE = {
+    "bg":       "#0a0b0e",
+    "surface":  "#14161c",
+    "text":     "#e8e8ea",
+    "text_dim": "#9a9aa0",
+    "rule":     "#262830",   # solid stand-in for rgba(255,255,255,0.08)
+    "blue":     "#4da3ff",
+    "orange":   "#ff6a3d",
+    "yellow":   "#f6c445",
+    "violet":   "#b265d9",
+    "grey":     "#888888",
+    "red":      "#ff5252",
+}
 
 
 def _write_json(path: Path, obj) -> None:
@@ -156,21 +176,98 @@ def export_qos(saves_qos: Path, out_dir: Path) -> None:
     })
 
 
+def export_qos_figure_svg(saves_qos: Path, figures_dir: Path) -> None:
+    """d2d_qos_cdf.svg — site-styled re-render of the QoS CDF.
+
+    Mirrors main_supporter.plot_qos_cdf but uses the site palette and dark
+    theme, exported as SVG so it slots into the showcase page next to the
+    other dark-themed widgets.
+    """
+    pkl = saves_qos / "qos_results_K50.pkl"
+    out_path = figures_dir / "d2d_qos_cdf.svg"
+
+    if not pkl.exists():
+        print(f"  WARNING: {pkl} missing; skipping SVG export.")
+        return
+
+    # Lazy import so the JSON-only path stays lightweight.
+    import numpy as np
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    with pkl.open("rb") as f:
+        r = pickle.load(f)
+
+    R_MIN = float(r["R_MIN"])
+    series = [
+        ("WMMSE (Baseline)",         r["metrics_wm"],         SITE["blue"],   ":",   1.5),
+        ("WMMSE (QoS Constraint)",   r["metrics_wm_qos"],     SITE["blue"],   "-.",  1.5),
+        ("Original GNN",             r["metrics_old"],        SITE["violet"], "--",  1.6),
+        ("Modified GNN (Constraint)",            r["metrics_QoS"],        SITE["orange"], "-",   2.4),
+        ("Modified GNN with Penalty Annealing", r["metrics_QoS_anneal"], SITE["yellow"], "-",   2.0),
+    ]
+
+    fig, ax = plt.subplots(figsize=(8, 5))
+    fig.patch.set_facecolor(SITE["bg"])
+    ax.set_facecolor(SITE["bg"])
+
+    for label, m, color, ls, lw in series:
+        sorted_rates = np.sort(m["rates_flat"])
+        p = np.arange(len(sorted_rates)) / float(len(sorted_rates) - 1)
+        ax.plot(sorted_rates, p, label=label, color=color, linestyle=ls, linewidth=lw)
+
+    ax.axvline(x=R_MIN, color=SITE["red"], linestyle="-.", linewidth=1.4,
+               label=f"r_min = {R_MIN}")
+
+    # Axis range — keep matplotlib's framing (lower/middle of the distribution).
+    sample = np.sort(r["metrics_wm"]["rates_flat"])
+    ax.set_xlim(0, max(np.percentile(sample, 95), R_MIN * 3))
+    ax.set_ylim(0, 1.0)
+
+    ax.set_xlabel("Data Rate (bits/s/Hz)", color=SITE["text"])
+    ax.set_ylabel("Cumulative Probability (CDF)", color=SITE["text"])
+    ax.set_title("CDF of User Data Rates", color=SITE["text"], pad=12)
+
+    for spine in ax.spines.values():
+        spine.set_color(SITE["rule"])
+    ax.tick_params(colors=SITE["text_dim"])
+    ax.grid(True, color=SITE["rule"], alpha=0.6, linewidth=0.7)
+
+    legend = ax.legend(loc="lower right", facecolor=SITE["surface"],
+                       edgecolor=SITE["rule"], labelcolor=SITE["text"], framealpha=0.95)
+    legend.get_frame().set_linewidth(0.7)
+
+    fig.tight_layout()
+    figures_dir.mkdir(parents=True, exist_ok=True)
+    fig.savefig(out_path, format="svg", facecolor=fig.get_facecolor(),
+                bbox_inches="tight")
+    plt.close(fig)
+    print(f"  wrote {out_path}")
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--out", default=str(DEFAULT_OUT),
-                    help=f"output directory (default: {DEFAULT_OUT})")
+                    help=f"JSON output directory (default: {DEFAULT_OUT})")
+    ap.add_argument("--figures-out", default=str(DEFAULT_FIGURES_OUT),
+                    help=f"SVG figures output directory (default: {DEFAULT_FIGURES_OUT})")
     args = ap.parse_args()
 
     out_dir = Path(args.out).resolve()
     out_dir.mkdir(parents=True, exist_ok=True)
-    print(f"Exporting to {out_dir}")
+    figures_dir = Path(args.figures_out).resolve()
+    print(f"Exporting JSON to {out_dir}")
+    print(f"Exporting figures to {figures_dir}")
 
-    print("\n[1/2] K-sweep export...")
+    print("\n[1/3] K-sweep export...")
     export_sweep_K(HERE / "saves", out_dir)
 
-    print("\n[2/2] QoS export (optional)...")
+    print("\n[2/3] QoS JSON export (optional)...")
     export_qos(HERE / "saves_QoS", out_dir)
+
+    print("\n[3/3] QoS SVG figure export (optional)...")
+    export_qos_figure_svg(HERE / "saves_QoS", figures_dir)
 
     print("\nDone.")
     return 0
