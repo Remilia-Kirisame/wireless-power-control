@@ -10,14 +10,14 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" />
 
-    <link rel="stylesheet" href="styles.css?v=1.2" />
+    <link rel="stylesheet" href="styles.css?v=1.3" />
 
     <script type="module" src="components/sweep-slider/sweep-slider.js"></script>
     <script type="module" src="components/method-toggle/method-toggle.js"></script>
     <script type="module" src="components/layout-gallery/layout-gallery.js"></script>
     <script type="module" src="components/layout-viewer/layout-viewer.js"></script>
     <script type="module" src="components/interference-sandbox/interference-sandbox.js"></script>
-    <script type="module" src="script.js?v=1.2"></script>
+    <script type="module" src="script.js?v=1.3"></script>
 </head>
 <body>
     <!-- Entry overlay — title plate + orange load bar, wipes off after ~2s (see script.js) -->
@@ -62,9 +62,9 @@
                     harder, constrained problem it never saw during training.
                 </p>
                 <div class="hero-meta">
-                    <span><span class="key">AUTHOR</span><span class="val">{{AUTHOR_NAME}}</span></span>
-                    <span><span class="key">AFFILIATION</span><span class="val">{{AFFILIATION}}</span></span>
-                    <span><span class="key">DATE</span><span class="val">{{DATE}}</span></span>
+                    <span><span class="key">AUTHOR</span><span class="val" data-site-meta="author"></span></span>
+                    <span><span class="key">AFFILIATION</span><span class="val" data-site-meta="affiliation"></span></span>
+                    <span><span class="key">DATE</span><span class="val" data-site-meta="date"></span></span>
                 </div>
             </div>
 
@@ -666,8 +666,8 @@
         </section>
 
         <footer class="site-footer">
-            <span>{{AUTHOR_NAME}} · {{AFFILIATION}} · {{DATE}}</span>
-            <span><a href="https://github.com/" target="_blank" rel="noreferrer">repository</a> · commit <span class="num">{{COMMIT_SHA}}</span></span>
+            <span data-site-meta="byline"></span>
+            <span><a href="https://github.com/Remilia-Kirisame/wireless-power-control" target="_blank" rel="noreferrer">repository</a> · commit <span class="num">7603338</span></span>
         </footer>
     </main>
 </body>

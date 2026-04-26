@@ -11,6 +11,17 @@ const VIEW_FADE_MS = 160;       // half-crossfade duration
 const ENTRY_DURATION_MS = 2000; // title fade-in + progress fill + wipe total
 
 // --------------------------------------------------------------------
+// Site meta — single source of truth for hero + footer byline.
+// Edit these three values and both the Home view and the global footer
+// pick them up on next load.
+// --------------------------------------------------------------------
+const SITE_META = {
+    author:      'Remilia',
+    affiliation: 'SDM',
+    date:        'May 2026',
+};
+
+// --------------------------------------------------------------------
 // Shared data cache — components can read/write here to dedupe fetches.
 // --------------------------------------------------------------------
 window.__dataCache = window.__dataCache || new Map();
@@ -126,6 +137,19 @@ function initEntry() {
 }
 
 // --------------------------------------------------------------------
+// Site meta — fill any [data-site-meta] element from SITE_META.
+// `byline` collapses author/affiliation/date into one separated string.
+// --------------------------------------------------------------------
+function initSiteMeta() {
+    const byline = `${SITE_META.author} · ${SITE_META.affiliation} · ${SITE_META.date}`;
+    const slots = { ...SITE_META, byline };
+    document.querySelectorAll('[data-site-meta]').forEach((el) => {
+        const key = el.dataset.siteMeta;
+        if (key in slots) el.textContent = slots[key];
+    });
+}
+
+// --------------------------------------------------------------------
 // Live readout in the sidebar — cycle through a few real-ish samples.
 // --------------------------------------------------------------------
 function initLiveReadout() {
@@ -143,6 +167,7 @@ function initLiveReadout() {
 // Bootstrap.
 // --------------------------------------------------------------------
 document.addEventListener('DOMContentLoaded', () => {
+    initSiteMeta();
     initEntry();
     initRouter();
     initLiveReadout();
