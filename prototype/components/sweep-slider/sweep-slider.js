@@ -26,8 +26,15 @@ TEMPLATE.innerHTML = /* html */ `
             position: relative;
             color: var(--text);
             font-family: var(--font-sans);
+            /* Mirror the JS plot padding (see _draw) so the slider and tick row
+             * align with the chart's data area. Update both sides if either changes. */
+            --pad-l: 44px;
+            --pad-r: 14px;
         }
-        :host([data-compact="true"]) { padding: 16px 18px; }
+        :host([data-compact="true"]) {
+            padding: 16px 18px;
+            --pad-l: 38px;
+        }
 
         .head {
             display: flex;
@@ -35,6 +42,12 @@ TEMPLATE.innerHTML = /* html */ `
             align-items: flex-start;
             gap: 18px;
             margin-bottom: 8px;
+            flex-wrap: wrap;
+        }
+        .hint-group {
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
             flex-wrap: wrap;
         }
         .eyebrow {
@@ -167,20 +180,29 @@ TEMPLATE.innerHTML = /* html */ `
         }
 
         .slider-row {
-            display: grid;
-            grid-template-columns: 1fr auto;
-            gap: 16px;
-            align-items: center;
             margin-top: 4px;
+            /* Align the native range track with the chart's data area. The −7px
+             * compensates for the 14px-wide thumb: in Chrome/Safari the thumb
+             * center is constrained to (thumb_radius .. width − thumb_radius)
+             * within the input, so extending the input outward by the radius
+             * lets the thumb center reach pad-l..(W−pad-r). */
+            padding-left: calc(var(--pad-l) - 7px);
+            padding-right: calc(var(--pad-r) - 7px);
         }
         .ticks {
-            display: flex;
-            justify-content: space-between;
+            position: relative;
+            height: 14px;
             font-family: var(--font-mono);
             font-size: 10px;
             color: var(--text-mute);
             margin-top: 4px;
             letter-spacing: 0.04em;
+        }
+        .ticks > span {
+            position: absolute;
+            top: 0;
+            transform: translateX(-50%);
+            white-space: nowrap;
         }
         .kbdhint {
             display: inline-flex;
@@ -205,6 +227,7 @@ TEMPLATE.innerHTML = /* html */ `
             appearance: none;
             width: 100%;
             height: 3px;
+            margin: 0; /* override UA default 2px so slider-row padding measures cleanly */
             background: rgba(255,255,255,0.08);
             border-radius: 2px;
             cursor: pointer;
@@ -273,7 +296,10 @@ TEMPLATE.innerHTML = /* html */ `
     </style>
 
     <div class="head">
-        <span class="eyebrow" data-hint-label>INTERACTIVE · drag to explore</span>
+        <div class="hint-group">
+            <span class="eyebrow" data-hint-label>INTERACTIVE · drag to explore</span>
+            <span class="kbdhint" aria-hidden="true"><kbd>◀</kbd><kbd>▶</kbd></span>
+        </div>
         <div class="readout" data-readout></div>
     </div>
 
@@ -286,7 +312,6 @@ TEMPLATE.innerHTML = /* html */ `
 
     <div class="slider-row">
         <input type="range" data-slider aria-label="x-axis value" />
-        <span class="kbdhint" aria-hidden="true"><kbd>◀</kbd><kbd>▶</kbd></span>
     </div>
     <div class="ticks" data-ticks></div>
 
@@ -475,9 +500,14 @@ class SweepSlider extends HTMLElement {
 
     _renderTicks() {
         this.$ticks.innerHTML = '';
-        this._data.points.forEach((p) => {
+        const n = this._data.points.length;
+        this._data.points.forEach((p, i) => {
             const span = document.createElement('span');
             span.textContent = (p.label !== undefined) ? p.label : p.x;
+            // Position each tick's center at its data point's x in chart-wrap
+            // coords: pad-l + frac * (W − pad-l − pad-r). Mirrors xAt() in _draw.
+            const frac = (n <= 1) ? 0.5 : i / (n - 1);
+            span.style.left = `calc(var(--pad-l) * ${1 - frac} + (100% - var(--pad-r)) * ${frac})`;
             this.$ticks.appendChild(span);
         });
     }
