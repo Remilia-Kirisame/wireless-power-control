@@ -1,4 +1,4 @@
-# WEB_PROMPT.md — build brief for the capstone showcase site
+# PROMPT_WEB.md — build brief for the capstone showcase site
 
 > **Purpose.** This file is a **self-contained prompt for an AI coding assistant** (Claude Code, Cursor, etc.) to build v1 of the capstone showcase website. It consolidates decisions from `BRAINSTORM.md` and removes the "we're still deciding" framing. Read `CLAUDE.md` for repository context; read `WEBSITE.md` only if you need to explain the dev loop to a beginner.
 >

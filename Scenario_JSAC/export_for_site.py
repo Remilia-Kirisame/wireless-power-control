@@ -69,7 +69,7 @@ def _stub(path: Path, shape: dict, reason: str) -> None:
 # exporters
 # --------------------------------------------------------------------
 def export_sweeps(save_main: Path, out_dir: Path) -> None:
-    """sweep_B.json and sweep_M.json in the shape documented in WEB_PROMPT §8.1."""
+    """sweep_B.json and sweep_M.json in the shape documented in PROMPT_WEB §8.1."""
     methods = ["Naive", "WMMSE", "GNN"]
 
     # --- Sweep B ---

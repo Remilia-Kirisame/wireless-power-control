@@ -4,7 +4,7 @@
  * encode allocated power; edges colored by link type; click a Blue-car to isolate that cluster.
  *
  * Attributes:
- *   data-src       Path to layout JSON (WEB_PROMPT §7.D shape).
+ *   data-src       Path to layout JSON (PROMPT_WEB §7.D shape).
  *   data-initial   Initial method ("Naive" | "WMMSE" | "GNN"). Default "GNN".
  *   data-compact   "true" for smaller padding / font sizing inside galleries.
  */

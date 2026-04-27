@@ -77,7 +77,7 @@ Decided on a **multi-view, tab-based SPA** instead of a single scrolling page (s
 - **Tab switching.** Hash-based, deep-linkable, browser back works. Crossfade between views; instantaneous under `prefers-reduced-motion`.
 - **Per-view reveals.** Fade-up reveals fire when a view *activates*, not on scroll — each view is short enough that staggering is unnecessary.
 
-Exact timings, widths, and easing live in `WEB_PROMPT.md §6.0`.
+Exact timings, widths, and easing live in `PROMPT_WEB.md §6.0`.
 
 **Future improvement — option 3 (canvas/SVG title animation).** Instead of a flat horizontal wipe, build the entrance as a slowly-resolving "interference field" that condenses into the title: animated particle dots or a noisy heat-map over canvas that crystallises into the logo mark as the overlay dissolves. Character-by-character reveal for the title, timed to the field clearing. Higher wow-factor but easily half a day to a day of polish — keep in the sandbox queue, ship v1.1 with the flat wipe.
 
@@ -96,7 +96,7 @@ Exact timings, widths, and easing live in `WEB_PROMPT.md §6.0`.
 
 What to avoid: gradients-as-backgrounds, pastel blobs, playful illustrations, drop shadows, anything reading "marketing landing page."
 
-Hex codes, font scales, exact timings, and CSS tokens live in `WEB_PROMPT.md §5 + §10`.
+Hex codes, font scales, exact timings, and CSS tokens live in `PROMPT_WEB.md §5 + §10`.
 
 
 

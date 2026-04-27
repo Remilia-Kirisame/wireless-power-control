@@ -3,7 +3,7 @@
  * Powers both the D2D K-scaling finding (C') and each of the JSAC sweep panels (C).
  *
  * Attributes:
- *   data-src       Path to the sweep JSON (WEB_PROMPT §8.1 shape).
+ *   data-src       Path to the sweep JSON (PROMPT_WEB §8.1 shape).
  *   data-x-key     Field inside each point used as x-value ("K", "B", "M").
  *   data-x-label   Axis label for the slider.
  *   data-metric    Metric key to plot on the y-axis.
