@@ -17,6 +17,7 @@
     <script type="module" src="components/layout-gallery/layout-gallery.js?v=1.2"></script>
     <script type="module" src="components/layout-viewer/layout-viewer.js?v=1.2"></script>
     <script type="module" src="components/interference-sandbox/interference-sandbox.js"></script>
+    <script type="module" src="components/setup-diagram/setup-diagram.js"></script>
     <script type="module" src="script.js?v=1.3.1"></script>
 </head>
 <body>
@@ -175,52 +176,7 @@
                     </p>
                 </div>
                 <div class="diagram" aria-hidden="true">
-                    <!-- D2D layout schematic -->
-                    <svg viewBox="0 0 400 320" xmlns="http://www.w3.org/2000/svg">
-                        <defs>
-                            <marker id="d2d-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
-                                <path d="M0,0 L10,5 L0,10 z" fill="var(--c-blue)" opacity="0.6"/>
-                            </marker>
-                        </defs>
-                        <rect x="20" y="20" width="360" height="280" rx="8" fill="none" stroke="rgba(255,255,255,0.06)" stroke-dasharray="2 4"/>
-                        <!-- 5 Tx-Rx pairs, faint interference lines -->
-                        <g stroke="var(--c-grey)" stroke-dasharray="1 4" stroke-width="1" opacity="0.35">
-                            <line x1="70" y1="80" x2="300" y2="90"/>
-                            <line x1="70" y1="80" x2="240" y2="250"/>
-                            <line x1="150" y1="180" x2="300" y2="90"/>
-                            <line x1="150" y1="180" x2="320" y2="220"/>
-                            <line x1="80" y1="240" x2="300" y2="90"/>
-                            <line x1="80" y1="240" x2="240" y2="250"/>
-                        </g>
-                        <!-- Direct links -->
-                        <g stroke="var(--c-blue)" stroke-width="1.4" opacity="0.9" marker-end="url(#d2d-arrow)">
-                            <line x1="70" y1="80" x2="130" y2="115"/>
-                            <line x1="300" y1="90" x2="260" y2="135"/>
-                            <line x1="150" y1="180" x2="205" y2="200"/>
-                            <line x1="320" y1="220" x2="275" y2="195"/>
-                            <line x1="80" y1="240" x2="140" y2="235"/>
-                            <line x1="240" y1="250" x2="200" y2="265"/>
-                        </g>
-                        <!-- Tx (filled squares) -->
-                        <g fill="var(--c-blue)">
-                            <rect x="65" y="75" width="10" height="10"/>
-                            <rect x="295" y="85" width="10" height="10"/>
-                            <rect x="145" y="175" width="10" height="10"/>
-                            <rect x="315" y="215" width="10" height="10"/>
-                            <rect x="75" y="235" width="10" height="10"/>
-                            <rect x="235" y="245" width="10" height="10"/>
-                        </g>
-                        <!-- Rx (open circles) -->
-                        <g fill="none" stroke="var(--c-blue)" stroke-width="1.6">
-                            <circle cx="130" cy="115" r="6"/>
-                            <circle cx="260" cy="135" r="6"/>
-                            <circle cx="205" cy="200" r="6"/>
-                            <circle cx="275" cy="195" r="6"/>
-                            <circle cx="140" cy="235" r="6"/>
-                            <circle cx="200" cy="265" r="6"/>
-                        </g>
-                        <text x="36" y="305" font-family="var(--font-mono)" font-size="9" fill="var(--text-mute)" letter-spacing="1.4">DIRECT LINK ─── &nbsp;&nbsp;&nbsp; INTERFERENCE - - -</text>
-                    </svg>
+                    <setup-diagram variant="d2d"></setup-diagram>
                 </div>
             </div>
 
@@ -405,69 +361,7 @@
                     </p>
                 </div>
                 <div class="diagram" aria-hidden="true">
-                    <svg viewBox="0 0 400 320" xmlns="http://www.w3.org/2000/svg">
-                        <!-- Three Blue clusters -->
-                        <rect x="20" y="20" width="360" height="280" rx="8" fill="none" stroke="rgba(255,255,255,0.06)" stroke-dasharray="2 4"/>
-                        <!-- inter-cluster interference (dashed grey) -->
-                        <g stroke="var(--c-grey)" stroke-dasharray="1 4" stroke-width="1" opacity="0.4">
-                            <line x1="90" y1="90" x2="300" y2="110"/>
-                            <line x1="100" y1="220" x2="300" y2="110"/>
-                            <line x1="90" y1="90" x2="290" y2="250"/>
-                            <line x1="100" y1="220" x2="290" y2="250"/>
-                        </g>
-                        <!-- cluster 1: blue at 90,90, 2 yellow, 2 green -->
-                        <g stroke="var(--c-yellow)" stroke-width="1" opacity="0.8">
-                            <line x1="90" y1="90" x2="55" y2="65"/>
-                            <line x1="90" y1="90" x2="130" y2="50"/>
-                        </g>
-                        <g stroke="var(--c-green)" stroke-width="1" opacity="0.8">
-                            <line x1="90" y1="90" x2="55" y2="130"/>
-                            <line x1="90" y1="90" x2="140" y2="115"/>
-                        </g>
-                        <!-- cluster 2: blue at 300,110 -->
-                        <g stroke="var(--c-yellow)" stroke-width="1" opacity="0.8">
-                            <line x1="300" y1="110" x2="265" y2="65"/>
-                            <line x1="300" y1="110" x2="345" y2="60"/>
-                        </g>
-                        <g stroke="var(--c-green)" stroke-width="1" opacity="0.8">
-                            <line x1="300" y1="110" x2="265" y2="155"/>
-                            <line x1="300" y1="110" x2="350" y2="140"/>
-                        </g>
-                        <!-- cluster 3: blue at 190,250 -->
-                        <g stroke="var(--c-yellow)" stroke-width="1" opacity="0.8">
-                            <line x1="190" y1="250" x2="155" y2="205"/>
-                            <line x1="190" y1="250" x2="150" y2="285"/>
-                        </g>
-                        <g stroke="var(--c-green)" stroke-width="1" opacity="0.8">
-                            <line x1="190" y1="250" x2="235" y2="210"/>
-                            <line x1="190" y1="250" x2="240" y2="280"/>
-                        </g>
-                        <!-- Tx squares -->
-                        <g fill="var(--c-blue)">
-                            <rect x="85" y="85" width="10" height="10"/>
-                            <rect x="295" y="105" width="10" height="10"/>
-                            <rect x="185" y="245" width="10" height="10"/>
-                        </g>
-                        <!-- Yellow Rx rings -->
-                        <g fill="none" stroke="var(--c-yellow)" stroke-width="1.6">
-                            <circle cx="55" cy="65" r="5"/>
-                            <circle cx="130" cy="50" r="5"/>
-                            <circle cx="265" cy="65" r="5"/>
-                            <circle cx="345" cy="60" r="5"/>
-                            <circle cx="155" cy="205" r="5"/>
-                            <circle cx="150" cy="285" r="5"/>
-                        </g>
-                        <!-- Green Rx rings -->
-                        <g fill="none" stroke="var(--c-green)" stroke-width="1.6">
-                            <circle cx="55" cy="130" r="5"/>
-                            <circle cx="140" cy="115" r="5"/>
-                            <circle cx="265" cy="155" r="5"/>
-                            <circle cx="350" cy="140" r="5"/>
-                            <circle cx="235" cy="210" r="5"/>
-                            <circle cx="240" cy="280" r="5"/>
-                        </g>
-                        <text x="36" y="305" font-family="var(--font-mono)" font-size="9" fill="var(--text-mute)" letter-spacing="1.4">TX ▪ &nbsp; YELLOW ◯ &nbsp; GREEN ◯ &nbsp; INTER-CLUSTER - - -</text>
-                    </svg>
+                    <setup-diagram variant="jsac"></setup-diagram>
                 </div>
             </div>
 

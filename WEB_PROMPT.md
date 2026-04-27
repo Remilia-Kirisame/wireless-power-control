@@ -152,7 +152,7 @@ Why this problem matters; why WMMSE's speed cost is real.
 
 ### 6.3 Scenario 1 · D2D (Foundation) (02)
 The scenario that earned the method.
-- **6.3.1 Setup.** SVG diagram of K transceiver pairs in a square field. Minimal annotation.
+- **6.3.1 Setup.** Use `<setup-diagram variant="d2d">`. Show six Tx-Rx pairs in a square field. Direct links are Tx→own Rx; interference shows one victim Rx receiving five incoming Tx→Rx leakage links from the other Tx nodes. Longer interference links are dimmer. Legend sits below/outside the dashed field border.
 - **6.3.2 Two models we built.** Side-by-side architecture cards: DNN (MLP 3×hidden, flattened \|h\|² input, K-dim power output, supervised MSE vs WMMSE) and GNN (IGCNet, 4 × message-passing, unsupervised sum-rate loss). Each card has: input shape, output shape, parameter count, "scales with K?" row.
 - **6.3.3 Headline figure — the scaling finding.** This is the page's money shot. See **widget C′** in §7.
 - **6.3.4 Why DNN scales poorly.** Three-sentence architectural explainer pinned next to the figure; monospace mini-table listing: *MLP: input `K²` floats, output `K` floats, params `O(K²)`. GNN: input per-node, shared params `~5k` regardless of K.*
@@ -163,7 +163,7 @@ The scenario that earned the method.
 
 ### 6.5 Scenario 2 · JSAC (Application) (04)
 The GNN handed a harder problem.
-- **6.5.1 Setup.** SVG with three Blue clusters, their Yellow/Green Rx, dashed lines for same-channel interference across Blue clusters, solid light lines for intra-cluster links. Visual vocabulary: Tx as filled squares in `--c-blue`, Yellow Rx as open rings in `--c-yellow`, Green Rx as open rings in `--c-green`, inter-cluster interference as dashed grey lines, intra-cluster links as thin faint solid lines.
+- **6.5.1 Setup.** Use `<setup-diagram variant="jsac">`. Show four Blue clusters, each with Yellow/Green Rx. Solid colored lines are intra-cluster links; dashed grey lines show one victim Rx receiving three incoming inter-cluster Tx→Rx leakage links from the other Blue Tx nodes. Longer interference links are dimmer. Legend sits below/outside the dashed field border.
 - **6.5.2 What's new vs D2D.** Three bullets: two edge types, per-group softmax enforces `∑_g p = P_max` by construction, squared-hinge on Yellow SINR.
 - **6.5.3 Results.** 2×2 grid rendered in SVG from `{{SITE_DIR}}/assets/data/sweep_B.json` + `sweep_M.json`:
   - (top-left) Green sum-rate vs B — three lines (Naive/WMMSE/GNN).
@@ -185,15 +185,18 @@ Author, year, repo link, commit SHA (optional — can be hand-edited).
 
 ---
 
-## 7. Interactive widgets (A–E in scope for v1)
+## 7. Components and interactive widgets
 
-Build all five. Each is a **Web Component (custom element)** with its own folder in `site/components/<name>/`, using **Shadow DOM for scoped styles**. Each reads its data from `{{SITE_DIR}}/assets/data/`; none of them run models at runtime.
+Build the static setup component plus all five interactive widgets. Each is a **Web Component (custom element)** with its own folder in `{{SITE_DIR}}/components/<name>/`, using **Shadow DOM for scoped styles**. Data widgets read from `{{SITE_DIR}}/assets/data/`; none run models at runtime.
 
 **Shared rules for all widgets.**
 - A mono eyebrow inside the component: `INTERACTIVE · <hint>`.
 - Every widget must be keyboard-operable (Tab to focus, arrow keys to step).
 - Must respect `prefers-reduced-motion`: swap animated transitions for instantaneous state changes when the media query matches.
 - Loading state: render a quiet skeleton until JSON resolves; if `fetch` fails, render the eyebrow text + a mono `offline — open via \`python -m http.server\`` message in the tertiary text color. Do **not** throw.
+
+### Static. `<setup-diagram>` — setup schematics
+Used in D2D and JSAC setup sections. Keep diagram data and tuning arrays near the top of `components/setup-diagram/setup-diagram.js`: D2D interference links, JSAC interference links, and per-line opacity. Shared dash/width tokens live in `styles.css`.
 
 ### A. `<layout-gallery>` — JSAC layout carousel *(easy)*
 Wraps `<layout-viewer>` (§7.D) and adds seed navigation: prev/next arrows, one thumb chip per seed, `←/→` keyboard nav. `1/2/3` switches the embedded viewer's method. The viewer's method toggle and three isolation modes carry through unchanged. Lives in the JSAC view (§6.5). Resets isolation when switching seeds.
@@ -313,6 +316,7 @@ If a figure genuinely can't be produced by the export pipeline, fall back to `si
 │   │   └── sweep-slider.css      # adopted via CSSStyleSheet into Shadow DOM
 │   ├── layout-gallery/
 │   ├── method-toggle/
+│   ├── setup-diagram/
 │   ├── layout-viewer/
 │   ├── interference-sandbox/
 │   └── _frozen/                  # copies of known-good component versions (created as we go)
@@ -361,6 +365,9 @@ The existing `site/` directory at the repo root is a **minimal reference scaffol
     --c-green:   #4caf50;
     --c-grey:    #888888;
     --c-violet:  #b265d9;
+
+    --setup-interference-width: 1;
+    --setup-interference-dash: 1 4;
   
     --font-sans: "Inter", system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
     --font-mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
@@ -391,14 +398,15 @@ The existing `site/` directory at the repo root is a **minimal reference scaffol
 
 1. **Tokens and shell.** Write `styles.css` tokens + the **tab shell** in `index.html`: the entry overlay, left sidebar (logo, Home link, 01–06 tab links, live readout), `<main class="views">`, and all seven `<section class="view">` landmarks (home + 01–06). Wire up the ~40-line hash router and the entry-animation `is-loaded` trigger in `script.js` before filling content — this de-risks the navigation before any figures exist.
 2. **Data export scripts.** Write `Scenario_JSAC/export_for_site.py` and `Scenario_D2D/export_for_site.py`; run them; confirm JSON lives under `{{SITE_DIR}}/assets/data/`.
-3. **`<sweep-slider>` first** (C + C′). Ship it rendering both D2D scaling and JSAC B-sweep. This is the highest-risk component; de-risk early.
-4. **`<method-toggle>`** (B) — wire into the 2×2 JSAC grid.
-5. **`<layout-gallery>`** (A) — export representative layout PNG/SVGs first, then the component is a thin viewer.
-6. **`<layout-viewer>`** (D) — pure SVG from layout JSONs.
-7. **`<interference-sandbox>`** (E) — physics + heatmap, last because it's furthest from the core narrative.
-8. **Hero + copy pass.** Author text lives in `index.html`; the user will refine wording.
-9. **Motion + polish.** Draw-in animations, accent glow, keyboard hints, the bibliography footer.
-10. **Accessibility + reduced-motion sweep.** Tab through the page; verify every widget responds to keyboard; verify `prefers-reduced-motion` kills animations.
+3. **`<setup-diagram>`** — static SVG component for D2D and JSAC setup sections.
+4. **`<sweep-slider>` first** (C + C′). Ship it rendering both D2D scaling and JSAC B-sweep. This is the highest-risk data component; de-risk early.
+5. **`<method-toggle>`** (B) — wire into the 2×2 JSAC grid.
+6. **`<layout-gallery>`** (A) — export representative layout PNG/SVGs first, then the component is a thin viewer.
+7. **`<layout-viewer>`** (D) — pure SVG from layout JSONs.
+8. **`<interference-sandbox>`** (E) — physics + heatmap, last because it's furthest from the core narrative.
+9. **Hero + copy pass.** Author text lives in `index.html`; the user will refine wording.
+10. **Motion + polish.** Draw-in animations, accent glow, keyboard hints, the bibliography footer.
+11. **Accessibility + reduced-motion sweep.** Tab through the page; verify every widget responds to keyboard; verify `prefers-reduced-motion` kills animations.
 
 ---
 
@@ -412,7 +420,8 @@ A reviewer should be able to answer *yes* to each:
 - [ ] Deep-linking (`index.html#jsac`) on a cold load opens directly on that view with no entry-animation artifacts.
 - [ ] The narrative reads D2D-first, JSAC-second; both are visually equivalent in weight.
 - [ ] The D2D scaling slider (C′) is the visual centerpiece of the D2D section.
-- [ ] All five widgets (A, B, C, C′, D, E) render real data from `{{SITE_DIR}}/assets/data/`, not placeholders.
+- [ ] `<setup-diagram>` renders both setup schematics with legends outside the dashed field borders and Tx→Rx interference semantics.
+- [ ] All interactive widgets (A, B, C/C′, D, E) render real data from `{{SITE_DIR}}/assets/data/`, not placeholders.
 - [ ] Tab-navigating from the top of the page reaches every interactive widget in a sensible order.
 - [ ] Enabling `prefers-reduced-motion` in the OS or DevTools disables all animations (entry overlay skipped, tab swaps instantaneous, reveals static); content still reads correctly.
 - [ ] No `.pth` / `.pkl` files under `{{SITE_DIR}}/`.
@@ -425,4 +434,4 @@ A reviewer should be able to answer *yes* to each:
 
 ## 14. One-liner restatement (the prompt to hand the AI)
 
-> Build `{{SITE_DIR}}/` (directory supplied at invocation — **not** the existing `site/`, which is read-only reference) — a polished, offline, **tab-based single-HTML-file** static showcase for a wireless-power-allocation capstone. Plain HTML/CSS/JS, no framework, no build step. Seven views (Home + 01–06) with a left sidebar, hash-based tab router, boot-plate overlay entry animation, and tab crossfades — all gated by `prefers-reduced-motion`. Dark modern-tech aesthetic. Narrative: **D2D scaling finding → method bridge → JSAC application → deep dive → refs**. Ship five Shadow-DOM Web Components: `<sweep-slider>` (used twice), `<method-toggle>`, `<layout-gallery>`, `<layout-viewer>`, `<interference-sandbox>`. Reads pre-exported JSON from `assets/data/` (helpers in `Scenario_{D2D,JSAC}/export_for_site.py`). Keyboard-navigate every widget; `COLORS` palette from `Scenario_JSAC/main.py:393` nudged for dark. See §6.0 for shell choreography, §5/§10 for vibe + tokens, §7 for widget specs.
+> Build `{{SITE_DIR}}/` (directory supplied at invocation — **not** the existing `site/`, which is read-only reference) — a polished, offline, **tab-based single-HTML-file** static showcase for a wireless-power-allocation capstone. Plain HTML/CSS/JS, no framework, no build step. Seven views (Home + 01–06) with a left sidebar, hash-based tab router, boot-plate overlay entry animation, and tab crossfades — all gated by `prefers-reduced-motion`. Dark modern-tech aesthetic. Narrative: **D2D scaling finding → method bridge → JSAC application → deep dive → refs**. Ship Shadow-DOM Web Components: `<setup-diagram>`, `<sweep-slider>` (used twice), `<method-toggle>`, `<layout-gallery>`, `<layout-viewer>`, `<interference-sandbox>`. Data widgets read pre-exported JSON from `assets/data/` (helpers in `Scenario_{D2D,JSAC}/export_for_site.py`). Keyboard-navigate every interactive widget; `COLORS` palette from `Scenario_JSAC/main.py:393` nudged for dark. See §6.0 for shell choreography, §5/§10 for vibe + tokens, §7 for component specs.
