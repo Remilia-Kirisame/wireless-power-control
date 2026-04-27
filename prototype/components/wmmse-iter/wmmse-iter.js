@@ -1056,11 +1056,14 @@ class WmmseIter extends HTMLElement {
         xLab.textContent = 'iteration';
         svg.appendChild(xLab);
 
+        const yLabX = 8;
+        const yLabY = CURVE_PAD_T + (CURVE_H - CURVE_PAD_T - CURVE_PAD_B) / 2;
         const yLab = svgEl('text', {
             class: 'axis-label',
-            x: CURVE_PAD_L - 32,
-            y: CURVE_PAD_T + 6,
-            'text-anchor': 'start',
+            x: yLabX,
+            y: yLabY,
+            'text-anchor': 'middle',
+            transform: `rotate(-90 ${yLabX} ${yLabY})`,
         });
         yLab.textContent = 'b/s/Hz';
         svg.appendChild(yLab);
