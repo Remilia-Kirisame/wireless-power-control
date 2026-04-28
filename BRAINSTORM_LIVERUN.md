@@ -440,3 +440,44 @@ Stage 2 UI should preserve the current Live Run shell:
 - same diagnostics strip,
 - D2D remains WMMSE / GNN / Greedy,
 - JSAC becomes WMMSE / GNN / Naive.
+
+## Stage 2 Implementation Status
+
+Stage 2 is now implemented in `prototype/` as a JSAC mode inside the existing Live Run shell.
+
+Files added or changed:
+
+- `Scenario_JSAC/export_live_run.py` - dense-mask JSAC GNN export helper.
+- `prototype/assets/models/jsac_igcnet_k50.onnx` - exported JSAC GNN for `K <= 50`.
+- `prototype/assets/models/jsac_live_manifest.json` - JSAC model, scaler, physics, and live-control manifest.
+- `prototype/assets/models/jsac_igcnet_k50_weights.json` - JS fallback weights.
+- `prototype/components/live-run-lab/live-run-jsac-lab.js` - JSAC browser lab component.
+- `prototype/components/live-run-lab/live-run-lab.js` - active D2D/JSAC mode switch.
+- `prototype/index.html` - Live Run copy updated from D2D-only to D2D + JSAC.
+
+Stage 2 shipped behavior:
+
+- JSAC mode toggle beside D2D.
+- Blue/Yellow/Green layout editor.
+- B, Yellow-per-Blue, and Green-per-Blue controls within a small `K <= 50` live range.
+- Drag Blue cars as clusters or drag individual Yellow/Green receivers.
+- JSAC channel builder with path loss, shadowing, fading, and same-channel inter-Blue interference.
+- Browser metadata builder for `group_ids`, Yellow/Green masks, interference edges, and intra-group edges.
+- Live ONNX JSAC GNN inference with JS fallback.
+- Browser-side per-Blue-car softmax for GNN powers.
+- Live JS WMMSE for JSAC.
+- Live Naive equal-power baseline.
+- Method toggle: WMMSE / GNN / Naive.
+- Green sum-rate, Yellow violation count, min/selected SINR context, and method runtime readouts.
+- Per-Blue budget meters with Yellow/Green split.
+- Yellow warning outlines when selected-method SINR is below target.
+- JSAC channel matrix heatmap.
+
+Verified:
+
+- `python -m py_compile Scenario_JSAC/export_live_run.py`
+- JSAC dense export smoke check: dense wrapper matches the PyG model before ONNX export.
+- `node --check prototype/components/live-run-lab/live-run-lab.js`
+- `node --check prototype/components/live-run-lab/live-run-jsac-lab.js`
+- `node --check prototype/script.js`
+- Static server asset checks at `http://127.0.0.1:8765/` for the JSAC component, manifest, and ONNX model.

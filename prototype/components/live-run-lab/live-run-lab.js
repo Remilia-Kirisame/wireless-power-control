@@ -1,4 +1,6 @@
-/* <live-run-lab> - D2D browser inference playground.
+import './live-run-jsac-lab.js';
+
+/* <live-run-lab> - Live Run browser inference playground.
  *
  * Stage 1 scope:
  * - D2D only, K <= 20.
@@ -32,6 +34,9 @@ TEMPLATE.innerHTML = /* html */ `
             padding: 20px;
             color: var(--text);
             font-family: var(--font-sans);
+        }
+        [hidden] {
+            display: none !important;
         }
         .head {
             display: flex;
@@ -327,15 +332,16 @@ TEMPLATE.innerHTML = /* html */ `
     <div class="head">
         <div>
             <span class="eyebrow">INTERACTIVE - live browser inference</span>
-            <div class="title">Draw the D2D interference channel and compare WMMSE, GNN, and Greedy.</div>
-            <div class="sub">Drag any transmitter or receiver. The browser rebuilds the graph, runs the exported D2D GNN, runs live WMMSE, and recomputes SINR plus sum-rate for the current geometry.</div>
+            <div class="title" data-title>Draw the D2D interference channel and compare WMMSE, GNN, and Greedy.</div>
+            <div class="sub" data-sub>Drag any transmitter or receiver. The browser rebuilds the graph, runs the exported D2D GNN, runs live WMMSE, and recomputes SINR plus sum-rate for the current geometry.</div>
         </div>
         <div class="mode-tabs" aria-label="Scenario mode">
-            <button type="button" class="is-active">D2D</button>
-            <button type="button" disabled title="Stage 2">JSAC - coming next</button>
+            <button type="button" class="is-active" data-mode="d2d">D2D</button>
+            <button type="button" data-mode="jsac">JSAC</button>
         </div>
     </div>
 
+    <div data-panel="d2d">
     <div class="toolbar">
         <div class="actions">
             <label class="toggle">K
@@ -382,7 +388,10 @@ TEMPLATE.innerHTML = /* html */ `
         </div>
     </div>
 
-    <div class="caption">D2D Stage 1 methods are WMMSE / GNN / Greedy. Equal power is intentionally not used here; it belongs to the JSAC mode planned for Stage 2.</div>
+    <div class="caption">D2D methods are WMMSE / GNN / Greedy. Equal power is intentionally not used here; JSAC uses the Naive equal-power baseline instead.</div>
+    </div>
+
+    <live-run-jsac-lab data-panel="jsac" hidden></live-run-jsac-lab>
 `;
 
 function clamp(v, lo, hi) {
@@ -424,15 +433,27 @@ function svgEl(name, attrs = {}) {
 }
 
 function loadScript(src) {
-    if ([...document.scripts].some((s) => s.src.endsWith(src))) return Promise.resolve();
-    return new Promise((resolve, reject) => {
-        const s = document.createElement('script');
-        s.src = src;
-        s.async = true;
-        s.onload = resolve;
-        s.onerror = () => reject(new Error(`failed to load ${src}`));
-        document.head.appendChild(s);
+    window.__liveRunScriptPromises = window.__liveRunScriptPromises || {};
+    if (window.__liveRunScriptPromises[src]) return window.__liveRunScriptPromises[src];
+    const existing = [...document.scripts].find((s) => s.src.endsWith(src));
+    window.__liveRunScriptPromises[src] = new Promise((resolve, reject) => {
+        const s = existing || document.createElement('script');
+        if (s.dataset.loaded === 'true') {
+            resolve();
+            return;
+        }
+        s.addEventListener('load', () => {
+            s.dataset.loaded = 'true';
+            resolve();
+        }, { once: true });
+        s.addEventListener('error', () => reject(new Error(`failed to load ${src}`)), { once: true });
+        if (!existing) {
+            s.src = src;
+            s.async = true;
+            document.head.appendChild(s);
+        }
     });
+    return window.__liveRunScriptPromises[src];
 }
 
 function linear(v, layer) {
@@ -459,6 +480,7 @@ class LiveRunLab extends HTMLElement {
         super();
         this.attachShadow({ mode: 'open' }).appendChild(TEMPLATE.content.cloneNode(true));
 
+        this.mode = 'd2d';
         this.k = DEFAULT_K;
         this.seed = 13;
         this.selectedMethod = 'GNN';
@@ -482,6 +504,8 @@ class LiveRunLab extends HTMLElement {
         this.$selected = this.shadowRoot.querySelector('[data-selected]');
         this.$methodTabs = this.shadowRoot.querySelector('[data-method-tabs]');
         this.$freeze = this.shadowRoot.querySelector('[data-freeze]');
+        this.$title = this.shadowRoot.querySelector('[data-title]');
+        this.$sub = this.shadowRoot.querySelector('[data-sub]');
     }
 
     connectedCallback() {
@@ -493,6 +517,9 @@ class LiveRunLab extends HTMLElement {
     }
 
     _initControls() {
+        this.shadowRoot.querySelectorAll('[data-mode]').forEach((btn) => {
+            btn.addEventListener('click', () => this._setMode(btn.dataset.mode));
+        });
         for (let i = 2; i <= 20; i++) {
             const opt = document.createElement('option');
             opt.value = String(i);
@@ -525,6 +552,24 @@ class LiveRunLab extends HTMLElement {
         });
 
         this._renderMethodTabs();
+        this._setMode(this.mode);
+    }
+
+    _setMode(mode) {
+        this.mode = mode === 'jsac' ? 'jsac' : 'd2d';
+        this.shadowRoot.querySelectorAll('[data-mode]').forEach((btn) => {
+            btn.classList.toggle('is-active', btn.dataset.mode === this.mode);
+        });
+        this.shadowRoot.querySelectorAll('[data-panel]').forEach((panel) => {
+            panel.hidden = panel.dataset.panel !== this.mode;
+        });
+        if (this.mode === 'jsac') {
+            this.$title.textContent = 'Draw Blue-car JSAC clusters and compare WMMSE, GNN, and Naive.';
+            this.$sub.textContent = 'Drag Blue transmitters or Yellow/Green receivers. The browser rebuilds same-channel interference, runs the exported JSAC GNN, applies per-Blue softmax, and tracks Green rate plus Yellow SINR constraints.';
+        } else {
+            this.$title.textContent = 'Draw the D2D interference channel and compare WMMSE, GNN, and Greedy.';
+            this.$sub.textContent = 'Drag any transmitter or receiver. The browser rebuilds the graph, runs the exported D2D GNN, runs live WMMSE, and recomputes SINR plus sum-rate for the current geometry.';
+        }
     }
 
     _renderMethodTabs() {

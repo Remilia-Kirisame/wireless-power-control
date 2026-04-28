@@ -1,0 +1,79 @@
+{
+  "scenario": "jsac",
+  "max_k": 50,
+  "model": "jsac_igcnet_k50.onnx",
+  "weights_fallback": "jsac_igcnet_k50_weights.json",
+  "checkpoint": "Scenario_JSAC/save_main/gnn_model.pth",
+  "inputs": {
+    "x": [
+      50,
+      4
+    ],
+    "edge_attr": [
+      50,
+      50,
+      3
+    ],
+    "edge_mask": [
+      50,
+      50
+    ],
+    "node_mask": [
+      50
+    ]
+  },
+  "trained_config": {
+    "B": 10,
+    "M_y": 2,
+    "M_g": 3,
+    "K": 50,
+    "shuffle_channels": false
+  },
+  "live_defaults": {
+    "B": 4,
+    "M_y": 2,
+    "M_g": 3,
+    "B_min": 2,
+    "B_max": 6,
+    "M_y_min": 1,
+    "M_y_max": 3,
+    "M_g_min": 1,
+    "M_g_max": 4
+  },
+  "physics": {
+    "field_length": 225.0,
+    "min_blue_dist": 50.0,
+    "rx_min_radius": 2.0,
+    "rx_max_radius": 20.0,
+    "min_rx_separation": 2.0,
+    "tx_height": 1.5,
+    "rx_height": 1.5,
+    "carrier_f": 2400000000.0,
+    "antenna_gain_decibel": 2.5,
+    "tx_power": 10.0,
+    "output_noise_power": 6.294627058970857e-14,
+    "var_noise": 6.294627058970857e-15,
+    "pmax": 1.0,
+    "sinr_min": 1.0,
+    "sinr_min_db": 0.0,
+    "wmmse_alpha_yellow": 0.1
+  },
+  "scalers": {
+    "dist": {
+      "sense_mean": 0.13172631125053502,
+      "sense_std": 0.09527150359023558,
+      "comm_mean": 0.1298749107385947,
+      "comm_std": 0.09389508206629721,
+      "interf_mean": 0.009132277447801972,
+      "interf_std": 0.004320200421207578
+    },
+    "loss": {
+      "sense_mean": 0.0023715663730500317,
+      "sense_std": 0.00442822572828593,
+      "comm_mean": 0.0023418220050056846,
+      "comm_std": 0.004368028656560035,
+      "interf_mean": 8.929723682307868e-05,
+      "interf_std": 0.00017757635377123354
+    }
+  }
+}
