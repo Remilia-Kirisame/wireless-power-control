@@ -1,12 +1,12 @@
 /* prototype/script.js — page-level orchestration.
  * - Entry overlay animation (title plate + orange load bar, then wipe).
- * - Hash-based tab router across seven views (home + 01..06).
+ * - Hash-based tab router across eight views (home + 01..07).
  * - Per-view reveal trigger + sidebar active-link sync.
  * - Shared data cache for components that dedupe fetches.
  */
 
 const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-const VIEWS = ['home', 'problem', 'd2d', 'method', 'jsac', 'deepdive', 'refs'];
+const VIEWS = ['home', 'problem', 'd2d', 'method', 'jsac', 'deepdive', 'liverun', 'refs'];
 const VIEW_FADE_MS = 160;       // half-crossfade duration
 const ENTRY_DURATION_MS = 2000; // title fade-in + progress fill + wipe total
 

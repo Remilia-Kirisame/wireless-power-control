@@ -19,6 +19,7 @@
     <script type="module" src="components/interference-sandbox/interference-sandbox.js"></script>
     <script type="module" src="components/setup-diagram/setup-diagram.js"></script>
     <script type="module" src="components/wmmse-iter/wmmse-iter.js"></script>
+    <script type="module" src="components/live-run-lab/live-run-lab.js?v=1.0.5"></script>
     <script type="module" src="script.js?v=1.3.1"></script>
 </head>
 <body>
@@ -43,7 +44,8 @@
             <a href="#method" class="tab-link" data-view="method"><span class="tab-num">03</span>Method</a>
             <a href="#jsac" class="tab-link" data-view="jsac"><span class="tab-num">04</span>JSAC</a>
             <a href="#deepdive" class="tab-link" data-view="deepdive"><span class="tab-num">05</span>Deep dive</a>
-            <a href="#refs" class="tab-link" data-view="refs"><span class="tab-num">06</span>References</a>
+            <a href="#liverun" class="tab-link" data-view="liverun"><span class="tab-num">06</span>Live Run</a>
+            <a href="#refs" class="tab-link" data-view="refs"><span class="tab-num">07</span>References</a>
         </nav>
         <div class="sidebar-foot">
             <span class="live-readout">● LIVE · GNN ~<span class="num" data-live-ms>58</span>ms</span>
@@ -76,7 +78,8 @@
                 <a href="#method"><span class="num">03</span>Method</a>
                 <a href="#jsac"><span class="num">04</span>JSAC</a>
                 <a href="#deepdive"><span class="num">05</span>Deep dive</a>
-                <a href="#refs"><span class="num">06</span>References</a>
+                <a href="#liverun"><span class="num">06</span>Live Run</a>
+                <a href="#refs"><span class="num">07</span>References</a>
             </nav>
         </section>
 
@@ -538,11 +541,36 @@
         </section>
 
         <!-- ============================================================
-             06 · REFERENCES
+             06 · LIVE RUN
+             ============================================================ -->
+        <section class="view section" id="liverun" data-view="liverun">
+            <div class="section-head reveal">
+                <span class="num-label">Section · 06 · Live Run</span>
+                <h2>The learned optimizer, running in the browser.</h2>
+            </div>
+
+            <div class="stack-md reveal" style="margin-bottom: 28px;">
+                <p class="lede">
+                    Stage 1 is the D2D live lab: draw or reshape transceiver pairs, then compare
+                    the iterative WMMSE reference, the exported GNN, and the D2D Greedy baseline.
+                </p>
+                <p class="muted">
+                    JSAC live editing is intentionally marked as the next stage. Its comparison set is
+                    WMMSE / GNN / Naive equal power; D2D uses Greedy instead.
+                </p>
+            </div>
+
+            <div class="reveal">
+                <live-run-lab></live-run-lab>
+            </div>
+        </section>
+
+        <!-- ============================================================
+             07 · REFERENCES
              ============================================================ -->
         <section class="view section section--narrow" id="refs" data-view="refs">
             <div class="section-head reveal">
-                <span class="num-label">Section · 06</span>
+                <span class="num-label">Section · 07</span>
                 <h2>References.</h2>
             </div>
 
