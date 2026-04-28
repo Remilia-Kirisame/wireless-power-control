@@ -11,9 +11,9 @@ boundary, so this script wraps the trained model in a dense-mask module:
 The wrapper exports raw per-link logits. The website applies the per-Blue-car
 softmax in JavaScript so every Blue car's normalized power budget sums to 1.
 
-Run from the repository root or from ``Scenario_JSAC``:
+Run from the repository root:
 
-    python Scenario_JSAC/export_live_run.py
+    python web_tools/export_jsac_live_run.py
 """
 
 from __future__ import annotations
@@ -32,17 +32,18 @@ from torch_geometric.data import Data
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent
-if str(HERE) not in sys.path:
-    sys.path.insert(0, str(HERE))
+SCENARIO_DIR = ROOT / "Scenario_JSAC"
+if str(SCENARIO_DIR) not in sys.path:
+    sys.path.insert(0, str(SCENARIO_DIR))
 
 import config_system as CS  # noqa: E402
 import model_gnn as MG      # noqa: E402
 
 
-DEFAULT_CHECKPOINT = HERE / "save_main" / "gnn_model.pth"
-DEFAULT_SCALERS = HERE / "save_main" / "scalers.pkl"
-DEFAULT_HYPERPARAMS = HERE / "save_main" / "hyperparams.pkl"
-DEFAULT_OUT = ROOT / "prototype" / "assets" / "models"
+DEFAULT_CHECKPOINT = SCENARIO_DIR / "save_main" / "gnn_model.pth"
+DEFAULT_SCALERS = SCENARIO_DIR / "save_main" / "scalers.pkl"
+DEFAULT_HYPERPARAMS = SCENARIO_DIR / "save_main" / "hyperparams.pkl"
+DEFAULT_OUT = ROOT / "web" / "assets" / "models"
 MAX_K = 50
 
 

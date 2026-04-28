@@ -1,4 +1,4 @@
-/* prototype/script.js — page-level orchestration.
+/* web/script.js — page-level orchestration.
  * - Entry overlay animation (title plate + orange load bar, then wipe).
  * - Hash-based tab router across eight views (home + 01..07).
  * - Per-view reveal trigger + sidebar active-link sync.

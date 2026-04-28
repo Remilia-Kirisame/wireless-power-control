@@ -1,7 +1,7 @@
 """Export JSAC pickles to JSON for the static showcase site.
 
-Run from this directory:
-    python export_for_site.py [--out ../prototype/assets/data]
+Run from the repository root:
+    python web_tools/export_jsac_for_site.py [--out web/assets/data]
 
 Reads:
     save_main/results_sweep_B.pkl
@@ -30,7 +30,12 @@ from pathlib import Path
 # helpers
 # --------------------------------------------------------------------
 HERE = Path(__file__).resolve().parent
-DEFAULT_OUT = (HERE / ".." / "prototype" / "assets" / "data").resolve()
+ROOT = HERE.parent
+SCENARIO_DIR = ROOT / "Scenario_JSAC"
+DEFAULT_OUT = ROOT / "web" / "assets" / "data"
+
+if str(SCENARIO_DIR) not in sys.path:
+    sys.path.insert(0, str(SCENARIO_DIR))
 
 
 def _n(v):
@@ -250,8 +255,8 @@ def main() -> int:
     out_dir.mkdir(parents=True, exist_ok=True)
 
     print(f"Exporting to {out_dir}")
-    save_main = HERE / "save_main"
-    save_test = HERE / "save_test"
+    save_main = SCENARIO_DIR / "save_main"
+    save_test = SCENARIO_DIR / "save_test"
 
     print("\n[1/2] Sweep exports...")
     export_sweeps(save_main, out_dir)

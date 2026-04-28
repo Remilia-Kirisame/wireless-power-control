@@ -1,8 +1,8 @@
 """Export D2D pickles to JSON (and one SVG figure) for the static showcase site.
 
-Run from this directory:
-    python export_for_site.py [--out ../prototype/assets/data]
-                              [--figures-out ../prototype/assets/images/figures]
+Run from the repository root:
+    python web_tools/export_d2d_for_site.py [--out web/assets/data]
+                                            [--figures-out web/assets/images/figures]
 
 Reads:
     saves/simulation_results.pkl            (no-QoS sweep over K)
@@ -27,10 +27,15 @@ from pathlib import Path
 
 
 HERE = Path(__file__).resolve().parent
-DEFAULT_OUT = (HERE / ".." / "prototype" / "assets" / "data").resolve()
-DEFAULT_FIGURES_OUT = (HERE / ".." / "prototype" / "assets" / "images" / "figures").resolve()
+ROOT = HERE.parent
+SCENARIO_DIR = ROOT / "Scenario_D2D"
+DEFAULT_OUT = ROOT / "web" / "assets" / "data"
+DEFAULT_FIGURES_OUT = ROOT / "web" / "assets" / "images" / "figures"
 
-# Site palette (matches prototype/styles.css :root tokens).
+if str(SCENARIO_DIR) not in sys.path:
+    sys.path.insert(0, str(SCENARIO_DIR))
+
+# Site palette (matches web/styles.css :root tokens).
 SITE = {
     "bg":       "#0a0b0e",
     "surface":  "#14161c",
@@ -264,13 +269,13 @@ def main() -> int:
     print(f"Exporting figures to {figures_dir}")
 
     print("\n[1/3] K-sweep export...")
-    export_sweep_K(HERE / "saves", out_dir)
+    export_sweep_K(SCENARIO_DIR / "saves", out_dir)
 
     print("\n[2/3] QoS JSON export (optional)...")
-    export_qos(HERE / "saves_QoS", out_dir)
+    export_qos(SCENARIO_DIR / "saves_QoS", out_dir)
 
     print("\n[3/3] QoS SVG figure export (optional)...")
-    export_qos_figure_svg(HERE / "saves_QoS", figures_dir)
+    export_qos_figure_svg(SCENARIO_DIR / "saves_QoS", figures_dir)
 
     print("\nDone.")
     return 0

@@ -27,6 +27,7 @@ Relevant files in the repo:
 
 - `Scenario_D2D/` — has `model_dnn.py`, `model_gnn.py`, `main.py`, `test_QoS.py`; outputs live in `saves/` (no-QoS) and `saves_QoS/`.
 - `Scenario_JSAC/` — has `model_gnn.py`, `main.py`, `test_JSAC.py`; outputs live in `save_main/` (sweeps) and `save_test/` (single-topology deep dive).
+- `web_tools/` — website-only Python helpers that convert scenario outputs into static `{{SITE_DIR}}/assets/` files. Keep these outside `Scenario_D2D/` and `Scenario_JSAC/` so those folders can stay aligned with the research branch.
 - Color constants (shared between Python plots and the website): `Scenario_JSAC/main.py:393` — `{'Naive': '#888888', 'WMMSE': '#2196F3', 'GNN': '#FF5722'}`. Add `Yellow #F6C445` (sensing), `Green #4CAF50` (comm), and an extra `DNN` color for D2D (suggest `#9C27B0` violet — visually distinct from Blue/Orange).
 
 ---
@@ -258,9 +259,9 @@ Reader drags one Tx around a 2D field. The component recomputes path loss in Jav
 
 ## 8. Data — what to export and where
 
-Write two small Python helper scripts (one per scenario) that load the existing pickles and dump small JSONs into `{{SITE_DIR}}/assets/data/`. **These scripts belong at `Scenario_*/export_for_site.py` and should be self-contained (load the repo's pickles, dump JSON, done — no retraining).**
+Use the small Python helper scripts in `web_tools/` to load the existing pickles and dump small JSONs into `{{SITE_DIR}}/assets/data/`. **These scripts stay outside `Scenario_D2D/` and `Scenario_JSAC/`; do not add website-only helpers back into the scenario folders.**
 
-### 8.1 JSAC exports (`Scenario_JSAC/export_for_site.py`)
+### 8.1 JSAC exports (`web_tools/export_jsac_for_site.py`)
 From `save_main/results_sweep_B.pkl` and `save_main/results_sweep_M.pkl`:
 - `{{SITE_DIR}}/assets/data/sweep_B.json`
 - `{{SITE_DIR}}/assets/data/sweep_M.json`
@@ -289,7 +290,7 @@ Shape:
 
 From `save_test/test_jsac_results.pkl` + layout snapshots: export **3–6 representative layouts** to `{{SITE_DIR}}/assets/data/layouts/jsac_layout_{id}.json` in the shape shown in §7.D. If `save_test/` has pre-rendered snapshot PNGs, also copy them to `{{SITE_DIR}}/assets/images/layouts/` with the naming scheme `jsac_seed{id}_{method}.png`.
 
-### 8.2 D2D exports (`Scenario_D2D/export_for_site.py`)
+### 8.2 D2D exports (`web_tools/export_d2d_for_site.py`)
 - `{{SITE_DIR}}/assets/data/d2d_sweep_K.json` — same JSON shape as JSAC sweeps but with `methods: ["WMMSE", "GNN", "DNN"]` and metrics `sum_rate`, `sum_rate_ratio_vs_wmmse`, `inference_ms`.
 - `{{SITE_DIR}}/assets/data/d2d_qos.json` (optional) — CDFs of per-user rate for unconstrained vs QoS-constrained, one object per method.
 - If the D2D `saves/` pickles are absent on a fresh clone (they're `.gitignore`d), the script should print a clear `"(re-run Scenario_D2D/main.py to regenerate)"` message and exit cleanly rather than crash.
@@ -389,7 +390,7 @@ The existing `site/` directory at the repo root is a **minimal reference scaffol
 - **No dependency on a CMS, markdown pipeline, or templating engine.** Content is written directly into `index.html`.
 - **No analytics, no cookie banner, no telemetry.**
 - **No dark-mode toggle in v1.** Dark is canonical. (Light mode is a v2 option.)
-- **Don't retrain or refactor the research code.** The only allowed research-side change is the two `export_for_site.py` helpers in §8.
+- **Don't retrain or refactor the research code.** Website-only export helpers live in `web_tools/`, not inside the scenario folders.
 - **Don't modify the existing `site/` directory.** It's a minimal reference scaffold the user keeps for their own tracking. Read-only — except for copying `site/assets/images/placeholder.svg` into your build as instructed in §8.4.
 
 ---
@@ -397,7 +398,7 @@ The existing `site/` directory at the repo root is a **minimal reference scaffol
 ## 12. Build order (suggested)
 
 1. **Tokens and shell.** Write `styles.css` tokens + the **tab shell** in `index.html`: the entry overlay, left sidebar (logo, Home link, 01–06 tab links, live readout), `<main class="views">`, and all seven `<section class="view">` landmarks (home + 01–06). Wire up the ~40-line hash router and the entry-animation `is-loaded` trigger in `script.js` before filling content — this de-risks the navigation before any figures exist.
-2. **Data export scripts.** Write `Scenario_JSAC/export_for_site.py` and `Scenario_D2D/export_for_site.py`; run them; confirm JSON lives under `{{SITE_DIR}}/assets/data/`.
+2. **Data export scripts.** Use `web_tools/export_jsac_for_site.py` and `web_tools/export_d2d_for_site.py`; run them; confirm JSON lives under `{{SITE_DIR}}/assets/data/`.
 3. **`<setup-diagram>`** — static SVG component for D2D and JSAC setup sections.
 4. **`<sweep-slider>` first** (C + C′). Ship it rendering both D2D scaling and JSAC B-sweep. This is the highest-risk data component; de-risk early.
 5. **`<method-toggle>`** (B) — wire into the 2×2 JSAC grid.
@@ -434,4 +435,4 @@ A reviewer should be able to answer *yes* to each:
 
 ## 14. One-liner restatement (the prompt to hand the AI)
 
-> Build `{{SITE_DIR}}/` (directory supplied at invocation — **not** the existing `site/`, which is read-only reference) — a polished, offline, **tab-based single-HTML-file** static showcase for a wireless-power-allocation capstone. Plain HTML/CSS/JS, no framework, no build step. Seven views (Home + 01–06) with a left sidebar, hash-based tab router, boot-plate overlay entry animation, and tab crossfades — all gated by `prefers-reduced-motion`. Dark modern-tech aesthetic. Narrative: **D2D scaling finding → method bridge → JSAC application → deep dive → refs**. Ship Shadow-DOM Web Components: `<setup-diagram>`, `<sweep-slider>` (used twice), `<method-toggle>`, `<layout-gallery>`, `<layout-viewer>`, `<interference-sandbox>`. Data widgets read pre-exported JSON from `assets/data/` (helpers in `Scenario_{D2D,JSAC}/export_for_site.py`). Keyboard-navigate every interactive widget; `COLORS` palette from `Scenario_JSAC/main.py:393` nudged for dark. See §6.0 for shell choreography, §5/§10 for vibe + tokens, §7 for component specs.
+> Build `{{SITE_DIR}}/` (directory supplied at invocation — **not** the existing `site/`, which is read-only reference) — a polished, offline, **tab-based single-HTML-file** static showcase for a wireless-power-allocation capstone. Plain HTML/CSS/JS, no framework, no build step. Seven views (Home + 01–06) with a left sidebar, hash-based tab router, boot-plate overlay entry animation, and tab crossfades — all gated by `prefers-reduced-motion`. Dark modern-tech aesthetic. Narrative: **D2D scaling finding → method bridge → JSAC application → deep dive → refs**. Ship Shadow-DOM Web Components: `<setup-diagram>`, `<sweep-slider>` (used twice), `<method-toggle>`, `<layout-gallery>`, `<layout-viewer>`, `<interference-sandbox>`. Data widgets read pre-exported JSON from `assets/data/` (helpers in `web_tools/`). Keyboard-navigate every interactive widget; `COLORS` palette from `Scenario_JSAC/main.py:393` nudged for dark. See §6.0 for shell choreography, §5/§10 for vibe + tokens, §7 for component specs.

@@ -11,9 +11,9 @@ a dense-mask module:
 That is equivalent to the D2D PyG graph for the small dense/padded layouts the
 site needs, and it exports to ONNX Runtime Web cleanly.
 
-Run from the repository root or from ``Scenario_D2D``:
+Run from the repository root:
 
-    python Scenario_D2D/export_live_run.py
+    python web_tools/export_d2d_live_run.py
 """
 
 from __future__ import annotations
@@ -31,16 +31,17 @@ from torch import nn
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent
-if str(HERE) not in sys.path:
-    sys.path.insert(0, str(HERE))
+SCENARIO_DIR = ROOT / "Scenario_D2D"
+if str(SCENARIO_DIR) not in sys.path:
+    sys.path.insert(0, str(SCENARIO_DIR))
 
 import config_system as CS  # noqa: E402
 import model_gnn as MG      # noqa: E402
 
 
-DEFAULT_CHECKPOINT = HERE / "saves" / "gnn_model_K50.pth"
-DEFAULT_SCALERS = HERE / "saves" / "scalers.pkl"
-DEFAULT_OUT = ROOT / "prototype" / "assets" / "models"
+DEFAULT_CHECKPOINT = SCENARIO_DIR / "saves" / "gnn_model_K50.pth"
+DEFAULT_SCALERS = SCENARIO_DIR / "saves" / "scalers.pkl"
+DEFAULT_OUT = ROOT / "web" / "assets" / "models"
 MAX_K = 20
 
 
