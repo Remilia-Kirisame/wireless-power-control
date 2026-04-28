@@ -61,11 +61,11 @@ def _stub(path: Path, shape: dict, reason: str) -> None:
 
 
 def export_sweep_K(saves: Path, out_dir: Path) -> None:
-    """d2d_sweep_K.json — WMMSE / GNN / DNN vs K."""
+    """d2d_sweep_K.json — WMMSE / GNN / DNN / Greedy vs K."""
     pkl = saves / "simulation_results.pkl"
     out = out_dir / "d2d_sweep_K.json"
 
-    methods = ["WMMSE", "GNN", "DNN"]
+    methods = ["WMMSE", "GNN", "DNN", "Greedy"]
 
     if not pkl.exists():
         _stub(
@@ -80,22 +80,25 @@ def export_sweep_K(saves: Path, out_dir: Path) -> None:
     with pkl.open("rb") as f:
         r = pickle.load(f)
 
-    ks = r["K"]
+    ks    = r["K"]
     wmmse = r["WMMSE"]
     gnn   = r["GNN"]
     dnn   = r["DNN"]
+    grd   = r["Greedy"]
     t_w   = r["Time_WMM"]
     t_g   = r["Time_GNN"]
     t_d   = r["Time_DNN"]
+    t_gr  = r["Time_Grd"]
 
     points = []
     for i, k in enumerate(ks):
         wm = float(wmmse[i])
         point = {"x": int(k), "metrics": {}}
         for name, sr_arr, t_arr in (
-            ("WMMSE", wmmse, t_w),
-            ("GNN",   gnn,   t_g),
-            ("DNN",   dnn,   t_d),
+            ("WMMSE",  wmmse, t_w),
+            ("GNN",    gnn,   t_g),
+            ("DNN",    dnn,   t_d),
+            ("Greedy", grd,   t_gr),
         ):
             sr = float(sr_arr[i])
             point["metrics"][name] = {
