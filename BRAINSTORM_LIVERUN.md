@@ -95,7 +95,6 @@ Both modes should support:
 - freeze or reshuffle fading/shadowing,
 - switch between methods,
 - hover/click a link to inspect direct gain, interference gain, power, SINR, and rate,
-- keyboard nudging for focused nodes,
 - a compact status chip like `ONNX / GNN / 4.8 ms`.
 
 When the layout changes:
@@ -303,7 +302,7 @@ Build:
 - saved example layouts,
 - WMMSE iteration overlay for small layouts,
 - comparison history strip showing how metrics changed as the user dragged nodes,
-- keyboard shortcuts and refined accessibility states,
+- refined button/select states,
 - local performance optimizations with Web Workers if needed.
 
 ## Risks And Design Constraints
@@ -481,3 +480,42 @@ Verified:
 - `node --check prototype/components/live-run-lab/live-run-jsac-lab.js`
 - `node --check prototype/script.js`
 - Static server asset checks at `http://127.0.0.1:8765/` for the JSAC component, manifest, and ONNX model.
+
+## Stage 3 Implementation Status
+
+Stage 3 is now implemented in `prototype/` as a polish layer on top of the working D2D and JSAC loops.
+
+Files changed:
+
+- `prototype/components/live-run-lab/live-run-lab.js` - D2D demo presets, saved layouts, combined solver traces, method-wide message-edge pulse styling, eased metric/power updates, and animated comparison history.
+- `prototype/components/live-run-lab/live-run-jsac-lab.js` - JSAC demo presets, saved layouts, combined solver traces, method-wide message-edge pulse styling, eased metric/budget updates, animated comparison history, and hardened toolbar activation.
+- `prototype/index.html` - cache-busted the Live Run module import to `v=1.2.4`.
+
+Stage 3 shipped behavior so far:
+
+- D2D presets: Balanced, Hidden terminal, Crowded corner.
+- JSAC presets: Balanced highway, Sensing stress, Crowded corner.
+- Native preset selectors in both modes for reliable demo control; preset buttons remain as quick chips.
+- GNN layer trace in both modes:
+  - D2D shows average normalized power after each dense fallback GNN layer.
+  - JSAC shows Yellow-vs-Green average power after each layer and before final softmax metrics.
+- Selected-method interference/message edges pulse for WMMSE, GNN, and browser baselines, respecting the existing `prefers-reduced-motion` block.
+- Metrics, runtimes, GNN layer traces, and JSAC budget meters ease into new solve values instead of snapping.
+- Method switching now crossfades the selected allocation, so D2D power bars and JSAC budget gauges ease between WMMSE/GNN/baseline.
+- Saved-layout selectors let a browser keep up to eight local D2D and JSAC example layouts.
+- GNN layer traces and WMMSE iteration overlays share one solver-trace box.
+- WMMSE iteration overlays show animated convergence checkpoints for the reference solver.
+- Method rows and mode tabs expose pressed states; failed shortcut/key-nudge controls were removed for a cleaner demo.
+- JSAC Add/Remove Blue activation de-dupes pointer/click events, avoiding single-click double increments.
+- Comparison history moved under the selected allocation/budget box and animates on solve refreshes and appends.
+
+Verified:
+
+- `node --check prototype/components/live-run-lab/live-run-lab.js`
+- `node --check prototype/components/live-run-lab/live-run-jsac-lab.js`
+- `node --check prototype/script.js`
+- Browser smoke test at `http://127.0.0.1:8766/#liverun`.
+- D2D reaches `ONNX / GNN`, Hidden terminal preset selector changes K to 6 and recomputes all methods.
+- JSAC reaches `ONNX / JSAC GNN`, Sensing stress preset selector recomputes metrics and Yellow violation counts.
+- Final browser smoke served `v=1.2.4`; D2D and JSAC both expose saved-layout controls and WMMSE iteration overlays.
+- Browser console had no warnings or errors after the smoke test.

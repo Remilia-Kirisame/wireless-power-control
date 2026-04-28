@@ -212,6 +212,9 @@ JSAC_TEMPLATE.innerHTML = /* html */ `
         .strip {
             padding: 14px;
         }
+        .history-strip {
+            grid-column: 1 / -1;
+        }
         .budget-rows {
             display: grid;
             gap: 7px;
@@ -245,6 +248,85 @@ JSAC_TEMPLATE.innerHTML = /* html */ `
         .budget-fill.green {
             background: rgba(76,175,80,0.82);
         }
+        .layer-trace, .trace-section + .trace-section {
+            margin-top: 14px;
+            padding-top: 12px;
+            border-top: 1px dashed var(--rule);
+            display: grid;
+            gap: 7px;
+        }
+        .trace-stack {
+            display: grid;
+            gap: 12px;
+        }
+        .trace-section {
+            display: grid;
+            gap: 7px;
+        }
+        .layer-row, .history-row {
+            display: grid;
+            grid-template-columns: 42px 1fr 112px;
+            gap: 8px;
+            align-items: center;
+            font-family: var(--font-mono);
+            font-size: 10px;
+            color: var(--text-dim);
+        }
+        .layer-track {
+            position: relative;
+            height: 8px;
+            border-radius: 99px;
+            background: rgba(255,255,255,0.075);
+            overflow: hidden;
+        }
+        .layer-fill {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 0;
+            transition: width var(--dur-mid) var(--ease), left var(--dur-mid) var(--ease);
+        }
+        .layer-fill.yellow {
+            background: rgba(246,196,69,0.78);
+        }
+        .layer-fill.green {
+            background: rgba(76,175,80,0.78);
+        }
+        .history {
+            display: grid;
+            gap: 8px;
+        }
+        .history-track {
+            height: 30px;
+            display: grid;
+            grid-auto-flow: column;
+            grid-auto-columns: minmax(4px, 1fr);
+            gap: 3px;
+            align-items: end;
+            padding: 4px;
+            border: 1px solid var(--rule-soft);
+            border-radius: 6px;
+            background: rgba(255,255,255,0.025);
+        }
+        .history-bar {
+            min-height: 2px;
+            border-radius: 99px 99px 2px 2px;
+            background: var(--history-color, var(--c-orange));
+            opacity: 0.42;
+            transition: height var(--dur-mid) var(--ease), opacity var(--dur-mid) var(--ease);
+        }
+        .history-row.is-active .history-bar {
+            opacity: 0.92;
+        }
+        .message-edge {
+            animation: messagePulse 1.6s linear infinite;
+            animation-delay: var(--edge-delay, 0s);
+        }
+        @keyframes messagePulse {
+            0% { stroke-dashoffset: 0; opacity: 0.16; }
+            45% { opacity: 0.6; }
+            100% { stroke-dashoffset: -15; opacity: 0.16; }
+        }
         .heat svg {
             width: 100%;
             aspect-ratio: 1;
@@ -263,13 +345,9 @@ JSAC_TEMPLATE.innerHTML = /* html */ `
         }
         .node {
             cursor: grab;
-            outline: none;
         }
         .node.is-dragging {
             cursor: grabbing;
-        }
-        .node:focus-visible .focus-ring {
-            opacity: 1;
         }
         .node-label {
             font-family: var(--font-mono);
@@ -297,10 +375,27 @@ JSAC_TEMPLATE.innerHTML = /* html */ `
             <label class="toggle">G
                 <select data-mg></select>
             </label>
+            <label class="toggle">Preset
+                <select data-preset-select>
+                    <option value="custom">Custom</option>
+                    <option value="balanced">Balanced highway</option>
+                    <option value="sensing">Sensing stress</option>
+                    <option value="crowded">Crowded corner</option>
+                </select>
+            </label>
+            <label class="toggle">Saved
+                <select data-saved-select>
+                    <option value="">Saved layouts</option>
+                </select>
+            </label>
+            <button type="button" data-save-layout>Save layout</button>
             <button type="button" data-add-blue>Add Blue</button>
             <button type="button" data-remove-blue>Remove Blue</button>
             <button type="button" data-random>Randomize</button>
             <button type="button" data-fading>Shuffle fading</button>
+            <button type="button" data-preset="balanced">Balanced highway</button>
+            <button type="button" data-preset="sensing">Sensing stress</button>
+            <button type="button" data-preset="crowded">Crowded corner</button>
             <label class="toggle"><input type="checkbox" data-freeze checked />Freeze fading</label>
         </div>
         <span class="status"><span class="dot"></span><span data-status>loading JSAC model</span></span>
@@ -309,7 +404,7 @@ JSAC_TEMPLATE.innerHTML = /* html */ `
     <div class="stage">
         <div class="field-card">
             <svg data-field viewBox="0 0 225 225" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Draggable JSAC layout"></svg>
-            <span class="field-hint">drag Blue/Rx - arrow keys nudge - shift = 10m</span>
+            <span class="field-hint">drag Blue/Rx</span>
         </div>
         <aside class="side-card">
             <div>
@@ -331,10 +426,27 @@ JSAC_TEMPLATE.innerHTML = /* html */ `
         <div class="strip">
             <div class="panel-label">Per-Blue budget - selected method</div>
             <div class="budget-rows" data-budgets></div>
+            <div class="layer-trace">
+                <div class="panel-label">Comparison history</div>
+                <div class="history" data-history></div>
+            </div>
         </div>
         <div class="strip heat">
             <div class="panel-label">Channel matrix |h|^2</div>
             <svg data-heat viewBox="0 0 220 220" preserveAspectRatio="xMidYMid meet" aria-label="JSAC channel matrix heatmap"></svg>
+        </div>
+        <div class="strip history-strip">
+            <div class="panel-label">Solver traces</div>
+            <div class="trace-stack">
+                <div class="trace-section">
+                    <div class="panel-label">GNN layer trace</div>
+                    <div data-layers></div>
+                </div>
+                <div class="trace-section">
+                    <div class="panel-label">WMMSE iteration overlay</div>
+                    <div data-wmmse-trace></div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -352,6 +464,16 @@ function fmt(v, digits = 2) {
 function fmtMs(v) {
     if (!Number.isFinite(v)) return '--';
     return v < 10 ? v.toFixed(2) : v.toFixed(1);
+}
+
+function lerpValue(a, b, t) {
+    const av = Number.isFinite(a) ? a : 0;
+    const bv = Number.isFinite(b) ? b : 0;
+    return av + (bv - av) * t;
+}
+
+function easeOutCubic(t) {
+    return 1 - Math.pow(1 - clamp(t, 0, 1), 3);
 }
 
 function mulberry32(seed) {
@@ -437,15 +559,33 @@ class LiveRunJsacLab extends HTMLElement {
         this.session = null;
         this.results = null;
         this.last = null;
+        this.history = [];
+        this.historyAnimationMode = 'idle';
+        this.layerTrace = null;
+        this.wmmseTrace = [];
+        this.savedLayouts = [];
+        this.displayResults = null;
+        this.transitionFromResults = null;
+        this.resultAnimationFrame = 0;
+        this.resultAnimationT = 1;
+        this.lastControlActivation = 0;
+        this.methodAnimationFrame = 0;
+        this.visualPower = null;
+        this.visualGroupUtil = null;
 
         this.$field = this.shadowRoot.querySelector('[data-field]');
         this.$heat = this.shadowRoot.querySelector('[data-heat]');
         this.$b = this.shadowRoot.querySelector('[data-b]');
         this.$my = this.shadowRoot.querySelector('[data-my]');
         this.$mg = this.shadowRoot.querySelector('[data-mg]');
+        this.$presetSelect = this.shadowRoot.querySelector('[data-preset-select]');
+        this.$savedSelect = this.shadowRoot.querySelector('[data-saved-select]');
         this.$status = this.shadowRoot.querySelector('[data-status]');
         this.$metrics = this.shadowRoot.querySelector('[data-metrics]');
         this.$budgets = this.shadowRoot.querySelector('[data-budgets]');
+        this.$layers = this.shadowRoot.querySelector('[data-layers]');
+        this.$history = this.shadowRoot.querySelector('[data-history]');
+        this.$wmmseTrace = this.shadowRoot.querySelector('[data-wmmse-trace]');
         this.$selected = this.shadowRoot.querySelector('[data-selected]');
         this.$methodTabs = this.shadowRoot.querySelector('[data-method-tabs]');
         this.$freeze = this.shadowRoot.querySelector('[data-freeze]');
@@ -476,27 +616,158 @@ class LiveRunJsacLab extends HTMLElement {
             this.mg = Number(this.$mg.value);
             this._randomizeLayout(true);
         });
-        this.shadowRoot.querySelector('[data-add-blue]').addEventListener('click', () => {
+        this.$presetSelect.addEventListener('change', () => {
+            if (this.$presetSelect.value === 'custom') return;
+            this._applyPreset(this.$presetSelect.value);
+        });
+        this.$savedSelect.addEventListener('change', () => {
+            if (!this.$savedSelect.value) return;
+            this._loadSavedLayout(this.$savedSelect.value);
+        });
+        this._bindActionButton('[data-save-layout]', () => this._saveCurrentLayout());
+        this._bindActionButton('[data-add-blue]', () => {
             this.B = clamp(this.B + 1, 2, 6);
             this.$b.value = String(this.B);
             this._randomizeLayout(true);
         });
-        this.shadowRoot.querySelector('[data-remove-blue]').addEventListener('click', () => {
+        this._bindActionButton('[data-remove-blue]', () => {
             this.B = clamp(this.B - 1, 2, 6);
             this.$b.value = String(this.B);
             this._randomizeLayout(true);
         });
-        this.shadowRoot.querySelector('[data-random]').addEventListener('click', () => {
+        this._bindActionButton('[data-random]', () => {
             this.seed += 19;
             this._randomizeLayout(true);
         });
-        this.shadowRoot.querySelector('[data-fading]').addEventListener('click', () => {
+        this._bindActionButton('[data-fading]', () => {
             this.seed += 103;
             this._channelRandoms = null;
             this._scheduleCompute(0);
         });
+        this.shadowRoot.querySelectorAll('[data-preset]').forEach((btn) => {
+            this._bindActionButton(btn, () => this._applyPreset(btn.dataset.preset));
+        });
 
         this._renderMethodTabs();
+        this._loadSavedLayouts();
+    }
+
+    _bindActionButton(target, action) {
+        const el = typeof target === 'string' ? this.shadowRoot.querySelector(target) : target;
+        if (!el) return;
+        const activate = (ev) => {
+            if (ev.type === 'pointerup') {
+                if (ev.button !== 0) return;
+                this.lastControlActivation = performance.now();
+                ev.preventDefault();
+                action();
+                return;
+            }
+            if (performance.now() - this.lastControlActivation < 250) return;
+            action();
+        };
+        el.addEventListener('pointerup', activate);
+        el.addEventListener('click', activate);
+    }
+
+    _savedStorageKey() {
+        return 'wireless-power-control.live-run.jsac.saved-layouts.v1';
+    }
+
+    _loadSavedLayouts() {
+        try {
+            this.savedLayouts = JSON.parse(window.localStorage.getItem(this._savedStorageKey()) || '[]');
+        } catch {
+            this.savedLayouts = [];
+        }
+        if (!Array.isArray(this.savedLayouts)) this.savedLayouts = [];
+        this._renderSavedLayouts();
+    }
+
+    _persistSavedLayouts() {
+        try {
+            window.localStorage.setItem(this._savedStorageKey(), JSON.stringify(this.savedLayouts));
+        } catch {
+            // The browser can disable local storage; saved layouts are optional polish.
+        }
+    }
+
+    _renderSavedLayouts() {
+        if (!this.$savedSelect) return;
+        const selected = this.$savedSelect.value;
+        this.$savedSelect.innerHTML = '<option value="">Saved layouts</option>';
+        for (const layout of this.savedLayouts) {
+            const opt = document.createElement('option');
+            opt.value = layout.id;
+            opt.textContent = layout.name;
+            this.$savedSelect.appendChild(opt);
+        }
+        if (this.savedLayouts.some((layout) => layout.id === selected)) this.$savedSelect.value = selected;
+    }
+
+    _saveCurrentLayout() {
+        const id = `jsac-${Date.now().toString(36)}`;
+        const layout = {
+            id,
+            name: `JSAC ${this.savedLayouts.length + 1}`,
+            B: this.B,
+            my: this.my,
+            mg: this.mg,
+            seed: this.seed,
+            blue: this.blue.map((p) => ({ x: p.x, y: p.y })),
+            rx: this.rx.map((p) => ({
+                blue: p.blue,
+                channel: p.channel,
+                type: p.type,
+                x: p.x,
+                y: p.y,
+            })),
+        };
+        this.savedLayouts.push(layout);
+        if (this.savedLayouts.length > 8) this.savedLayouts.shift();
+        this._persistSavedLayouts();
+        this._renderSavedLayouts();
+        this.$savedSelect.value = id;
+    }
+
+    _loadSavedLayout(id) {
+        const layout = this.savedLayouts.find((item) => item.id === id);
+        if (!layout) return;
+        const field = this._fieldLength();
+        const links = (Number(layout.my) || this.my) + (Number(layout.mg) || this.mg);
+        this._captureTransitionStart();
+        this.B = clamp(Number(layout.B) || JSAC_DEFAULT_B, 2, 6);
+        this.my = clamp(Number(layout.my) || JSAC_DEFAULT_MY, 1, 3);
+        this.mg = clamp(Number(layout.mg) || JSAC_DEFAULT_MG, 1, 4);
+        this.seed = Number(layout.seed) || this.seed;
+        this.$b.value = String(this.B);
+        this.$my.value = String(this.my);
+        this.$mg.value = String(this.mg);
+        if (this.$presetSelect) this.$presetSelect.value = 'custom';
+        this.blue = layout.blue.slice(0, this.B).map((p) => ({ x: clamp(p.x, 0, field), y: clamp(p.y, 0, field) }));
+        this.rx = layout.rx.slice(0, this.B * links).map((p) => ({
+            blue: clamp(Number(p.blue) || 0, 0, this.B - 1),
+            channel: clamp(Number(p.channel) || 0, 0, links - 1),
+            type: p.type === 'green' ? 'green' : 'yellow',
+            x: clamp(p.x, 0, field),
+            y: clamp(p.y, 0, field),
+        }));
+        if (this.blue.length < this.B || this.rx.length < this.B * this._linksPerBlue()) {
+            this.seed += 19;
+            this._randomizeLayout(false);
+        }
+        this.selected = null;
+        this.last = null;
+        this.results = null;
+        this.layerTrace = null;
+        this.wmmseTrace = [];
+        this.history = [];
+        this.historyAnimationMode = 'idle';
+        this._channelRandoms = null;
+        this.computeTicket++;
+        window.clearTimeout(this.pendingCompute);
+        this._draw();
+        this._scheduleCompute(0);
     }
 
     _fillSelect(select, lo, hi, value) {
@@ -517,13 +788,18 @@ class LiveRunJsacLab extends HTMLElement {
             btn.type = 'button';
             btn.textContent = method;
             btn.classList.toggle('is-active', method === this.selectedMethod);
-            btn.addEventListener('click', () => {
-                this.selectedMethod = method;
-                this._renderMethodTabs();
-                this._draw();
-            });
+            btn.setAttribute('aria-pressed', method === this.selectedMethod ? 'true' : 'false');
+            btn.addEventListener('click', () => this._selectMethod(method));
             this.$methodTabs.appendChild(btn);
         }
+    }
+
+    _selectMethod(method) {
+        if (!this._methodNames().includes(method) || method === this.selectedMethod) return;
+        const previous = this.selectedMethod;
+        this.selectedMethod = method;
+        this._renderMethodTabs();
+        this._startMethodTransition(previous, method);
     }
 
     async _load() {
@@ -593,8 +869,14 @@ class LiveRunJsacLab extends HTMLElement {
         const rxMax = this.manifest?.physics?.rx_max_radius || 20;
         const minSep = this.manifest?.physics?.min_rx_separation || 2;
 
+        this._captureTransitionStart();
         this.last = null;
         this.results = null;
+        this.layerTrace = null;
+        this.wmmseTrace = [];
+        this.history = [];
+        this.historyAnimationMode = 'idle';
+        if (this.$presetSelect) this.$presetSelect.value = 'custom';
         this.computeTicket++;
         window.clearTimeout(this.pendingCompute);
         this.blue = [];
@@ -660,6 +942,89 @@ class LiveRunJsacLab extends HTMLElement {
         this._channelRandoms = null;
         this._draw();
         if (recompute) this._scheduleCompute(0);
+    }
+
+    _applyPreset(name) {
+        const presets = {
+            balanced: {
+                B: 4,
+                my: 2,
+                mg: 3,
+                blue: [[38, 64], [92, 152], [152, 68], [190, 152]],
+                offsets: [
+                    [[8, -10], [-8, 11], [14, 8], [-13, -7], [2, 16]],
+                    [[-10, -8], [10, 10], [14, -4], [-12, 8], [1, -15]],
+                    [[-11, 8], [10, -10], [13, 7], [-14, -5], [2, 15]],
+                    [[-9, -11], [8, 11], [12, -7], [-13, 5], [3, 15]],
+                ],
+            },
+            sensing: {
+                B: 4,
+                my: 2,
+                mg: 3,
+                blue: [[42, 48], [102, 86], [160, 128], [96, 178]],
+                rx: [
+                    [91, 80], [34, 66], [56, 42], [35, 32], [62, 58],
+                    [151, 120], [92, 100], [114, 78], [91, 68], [116, 96],
+                    [101, 92], [172, 144], [176, 118], [148, 112], [166, 136],
+                    [84, 160], [110, 168], [108, 190], [81, 190], [96, 160],
+                ],
+            },
+            crowded: {
+                B: 5,
+                my: 2,
+                mg: 2,
+                blue: [[48, 55], [78, 118], [116, 74], [150, 132], [188, 76]],
+                offsets: [
+                    [[11, -7], [-9, 9], [13, 8], [-12, -6]],
+                    [[-11, -9], [9, 11], [14, -4], [-12, 8]],
+                    [[-9, 10], [11, -8], [13, 7], [-14, -5]],
+                    [[-10, -8], [10, 10], [12, -7], [-13, 6]],
+                    [[-10, 8], [9, -10], [12, 6], [-12, -7]],
+                ],
+            },
+        };
+        const preset = presets[name] || presets.balanced;
+        const field = this._fieldLength();
+        this._captureTransitionStart();
+        this.B = preset.B;
+        this.my = preset.my;
+        this.mg = preset.mg;
+        this.$b.value = String(this.B);
+        this.$my.value = String(this.my);
+        this.$mg.value = String(this.mg);
+        this.$presetSelect.value = name;
+        this.blue = preset.blue.map(([x, y]) => ({ x: clamp(x, 0, field), y: clamp(y, 0, field) }));
+        this.rx = [];
+        const links = this._linksPerBlue();
+        for (let b = 0; b < this.B; b++) {
+            for (let m = 0; m < links; m++) {
+                const direct = preset.rx?.[b * links + m];
+                const offset = preset.offsets?.[b]?.[m] || [0, 0];
+                const base = this.blue[b];
+                const x = direct ? direct[0] : base.x + offset[0];
+                const y = direct ? direct[1] : base.y + offset[1];
+                this.rx.push({
+                    blue: b,
+                    channel: m,
+                    type: m < this.my ? 'yellow' : 'green',
+                    x: clamp(x, 0, field),
+                    y: clamp(y, 0, field),
+                });
+            }
+        }
+        this.selected = null;
+        this.last = null;
+        this.results = null;
+        this.layerTrace = null;
+        this.wmmseTrace = [];
+        this.history = [];
+        this.historyAnimationMode = 'idle';
+        this._channelRandoms = null;
+        this.computeTicket++;
+        window.clearTimeout(this.pendingCompute);
+        this._draw();
+        this._scheduleCompute(0);
     }
 
     _metadata() {
@@ -826,6 +1191,7 @@ class LiveRunJsacLab extends HTMLElement {
         const gnnPower = this._applyGroupSoftmax(logits, tensors.meta);
         const gnnMs = performance.now() - gStart;
         if (ticket !== this.computeTicket) return;
+        if (this.session) this.layerTrace = this._traceGnnFallback(tensors);
 
         const H = tensors.losses.map((row) => row.map((v) => Math.sqrt(Math.max(v, 0))));
         const wStart = performance.now();
@@ -845,8 +1211,11 @@ class LiveRunJsacLab extends HTMLElement {
         }
 
         this.last = tensors;
+        const fromResults = this.transitionFromResults || this.displayResults || this.results || methods;
         this.results = methods;
-        this._draw();
+        this.transitionFromResults = null;
+        this._appendHistory(methods);
+        this._startResultAnimation(fromResults, methods);
     }
 
     async _runGnn(tensors) {
@@ -869,6 +1238,12 @@ class LiveRunJsacLab extends HTMLElement {
     }
 
     _runGnnFallback(tensors) {
+        const trace = this._traceGnnFallback(tensors);
+        this.layerTrace = trace;
+        return trace.final;
+    }
+
+    _traceGnnFallback(tensors) {
         const maxK = this.manifest.max_k;
         let x = [];
         for (let i = 0; i < maxK; i++) {
@@ -879,6 +1254,32 @@ class LiveRunJsacLab extends HTMLElement {
                 tensors.x[i * 4 + 3],
             ]);
         }
+        const layers = [];
+        const capture = (label) => {
+            const logits = x.map((row, i) => row[3] * tensors.nodeMask[i]);
+            const power = this._applyGroupSoftmax(logits, tensors.meta);
+            let yellow = 0;
+            let green = 0;
+            let yellowCount = 0;
+            let greenCount = 0;
+            for (let i = 0; i < tensors.meta.k; i++) {
+                if (tensors.meta.yellowMask[i]) {
+                    yellow += power[i];
+                    yellowCount++;
+                }
+                if (tensors.meta.greenMask[i]) {
+                    green += power[i];
+                    greenCount++;
+                }
+            }
+            layers.push({
+                label,
+                logits,
+                power,
+                yellowAvg: yellow / Math.max(1, yellowCount),
+                greenAvg: green / Math.max(1, greenCount),
+            });
+        };
         const conv = (xIn) => {
             const xOut = [];
             for (let target = 0; target < maxK; target++) {
@@ -909,10 +1310,14 @@ class LiveRunJsacLab extends HTMLElement {
             return xOut;
         };
         x = conv(x);
+        capture('L1');
         x = conv(x);
+        capture('L2');
         x = conv(x);
+        capture('L3');
         x = conv(x);
-        return x.map((row, i) => row[3] * tensors.nodeMask[i]);
+        capture('L4');
+        return { final: layers[layers.length - 1].logits, layers };
     }
 
     _applyGroupSoftmax(logits, meta) {
@@ -969,6 +1374,19 @@ class LiveRunJsacLab extends HTMLElement {
         let v = p.map((x) => Math.sqrt(x));
         const mu = new Array(k).fill(0);
         const lrMu = 0.5;
+        const losses = H.map((row) => row.map((x) => x * x));
+        const trace = [];
+        const checkpoints = new Set([0, 1, 2, 5, 10, 20, 50, JSAC_MAX_WMMSE_ITER]);
+        const capture = (iter) => {
+            if (!checkpoints.has(iter)) return;
+            const metrics = this._metrics(losses, p, meta);
+            trace.push({
+                iter,
+                greenSumRate: metrics.greenSumRate,
+                yellowViolations: metrics.yellowViolations,
+            });
+        };
+        capture(0);
 
         for (let iter = 0; iter < JSAC_MAX_WMMSE_ITER; iter++) {
             const hDiag = new Array(k);
@@ -1013,11 +1431,13 @@ class LiveRunJsacLab extends HTMLElement {
             }
             v = p.map((x) => Math.sqrt(x));
 
-            const sinr = this._sinrsFromLosses(H.map((row) => row.map((x) => x * x)), p);
+            const sinr = this._sinrsFromLosses(losses, p);
             for (let i = 0; i < k; i++) {
                 if (meta.yellowMask[i]) mu[i] = Math.max(0, mu[i] + lrMu * (sinrMin - sinr[i]));
             }
+            capture(iter + 1);
         }
+        this.wmmseTrace = trace;
         return p;
     }
 
@@ -1067,6 +1487,194 @@ class LiveRunJsacLab extends HTMLElement {
         };
     }
 
+    _appendHistory(methods) {
+        const entry = {
+            WMMSE: methods.WMMSE?.greenSumRate || 0,
+            GNN: methods.GNN?.greenSumRate || 0,
+            Naive: methods.Naive?.greenSumRate || 0,
+            violations: methods[this.selectedMethod]?.yellowViolations || 0,
+        };
+        const previous = this.history[this.history.length - 1];
+        const changed = !previous || ['WMMSE', 'GNN', 'Naive'].some((method) => Math.abs(entry[method] - previous[method]) > 0.01) || entry.violations !== previous.violations;
+        if (!changed) return;
+        this.history.push(entry);
+        if (this.history.length > 24) this.history.shift();
+        this.historyAnimationMode = previous ? 'append' : 'refresh';
+    }
+
+    _methodNames() {
+        return ['WMMSE', 'GNN', 'Naive'];
+    }
+
+    _displaySource() {
+        return this.displayResults || this.results;
+    }
+
+    _captureTransitionStart() {
+        this._clearMethodTransition();
+        if (this.resultAnimationFrame) {
+            window.cancelAnimationFrame(this.resultAnimationFrame);
+            this.resultAnimationFrame = 0;
+        }
+        const source = this.displayResults || this.results || this.transitionFromResults;
+        this.transitionFromResults = source;
+        this.displayResults = source ? this._cloneDisplayResults(source) : null;
+        this.resultAnimationT = 1;
+    }
+
+    _cloneGroupUtil(groupUtil = []) {
+        return groupUtil.map((g) => ({
+            total: g?.total || 0,
+            yellow: g?.yellow || 0,
+            green: g?.green || 0,
+        }));
+    }
+
+    _cloneDisplayResults(results) {
+        const clone = {};
+        for (const method of this._methodNames()) {
+            const r = results?.[method];
+            if (!r) continue;
+            clone[method] = {
+                ...r,
+                power: [...(r.power || [])],
+                sinr: [...(r.sinr || [])],
+                rates: [...(r.rates || [])],
+                groupUtil: this._cloneGroupUtil(r.groupUtil),
+            };
+        }
+        return clone;
+    }
+
+    _interpolateArray(a = [], b = [], t) {
+        const len = Math.max(a.length, b.length);
+        const out = new Array(len);
+        for (let i = 0; i < len; i++) out[i] = lerpValue(a[i], b[i], t);
+        return out;
+    }
+
+    _interpolateGroupUtil(a = [], b = [], t) {
+        const len = Math.max(a.length, b.length);
+        const out = [];
+        for (let i = 0; i < len; i++) {
+            out.push({
+                total: lerpValue(a[i]?.total, b[i]?.total, t),
+                yellow: lerpValue(a[i]?.yellow, b[i]?.yellow, t),
+                green: lerpValue(a[i]?.green, b[i]?.green, t),
+            });
+        }
+        return out;
+    }
+
+    _interpolateResults(fromResults, toResults, t) {
+        const out = {};
+        for (const method of this._methodNames()) {
+            const from = fromResults?.[method] || {};
+            const to = toResults?.[method] || {};
+            out[method] = {
+                ...to,
+                power: this._interpolateArray(from.power, to.power, t),
+                sinr: this._interpolateArray(from.sinr, to.sinr, t),
+                rates: this._interpolateArray(from.rates, to.rates, t),
+                groupUtil: this._interpolateGroupUtil(from.groupUtil, to.groupUtil, t),
+                timeMs: lerpValue(from.timeMs, to.timeMs, t),
+                greenSumRate: lerpValue(from.greenSumRate, to.greenSumRate, t),
+                yellowViolations: lerpValue(from.yellowViolations, to.yellowViolations, t),
+                yellowViolationPct: lerpValue(from.yellowViolationPct, to.yellowViolationPct, t),
+                minYellowSinr: lerpValue(from.minYellowSinr, to.minYellowSinr, t),
+            };
+        }
+        return out;
+    }
+
+    _startResultAnimation(fromResults, toResults) {
+        this._clearMethodTransition();
+        if (this.resultAnimationFrame) window.cancelAnimationFrame(this.resultAnimationFrame);
+        const from = this._cloneDisplayResults(fromResults);
+        const to = this._cloneDisplayResults(toResults);
+        const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        if (reduceMotion) {
+            this.displayResults = to;
+            this.resultAnimationT = 1;
+            this.historyAnimationMode = 'idle';
+            this._draw();
+            return;
+        }
+        const start = performance.now();
+        const duration = 760;
+        const tick = (now) => {
+            const raw = clamp((now - start) / duration, 0, 1);
+            const eased = easeOutCubic(raw);
+            this.resultAnimationT = eased;
+            this.displayResults = this._interpolateResults(from, to, eased);
+            this._draw();
+            if (raw < 1) {
+                this.resultAnimationFrame = window.requestAnimationFrame(tick);
+            } else {
+                this.resultAnimationFrame = 0;
+                this.resultAnimationT = 1;
+                this.displayResults = to;
+                this.historyAnimationMode = 'idle';
+                this._draw();
+            }
+        };
+        this.resultAnimationFrame = window.requestAnimationFrame(tick);
+    }
+
+    _clearMethodTransition() {
+        if (this.methodAnimationFrame) {
+            window.cancelAnimationFrame(this.methodAnimationFrame);
+            this.methodAnimationFrame = 0;
+        }
+        this.visualPower = null;
+        this.visualGroupUtil = null;
+    }
+
+    _startMethodTransition(fromMethod, toMethod) {
+        const source = this._displaySource();
+        const fromPower = this.visualPower || source?.[fromMethod]?.power;
+        const toPower = source?.[toMethod]?.power;
+        const fromGroupUtil = this.visualGroupUtil || source?.[fromMethod]?.groupUtil;
+        const toGroupUtil = source?.[toMethod]?.groupUtil;
+        if (!fromPower || !toPower) {
+            this._clearMethodTransition();
+            this._draw();
+            return;
+        }
+        if (this.methodAnimationFrame) window.cancelAnimationFrame(this.methodAnimationFrame);
+        const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        if (reduceMotion) {
+            this.visualPower = [...toPower];
+            this.visualGroupUtil = this._cloneGroupUtil(toGroupUtil);
+            this._draw();
+            this.visualPower = null;
+            this.visualGroupUtil = null;
+            return;
+        }
+        const from = [...fromPower];
+        const to = [...toPower];
+        const fromGroups = this._cloneGroupUtil(fromGroupUtil);
+        const toGroups = this._cloneGroupUtil(toGroupUtil);
+        const start = performance.now();
+        const duration = 520;
+        const tick = (now) => {
+            const raw = clamp((now - start) / duration, 0, 1);
+            const eased = easeOutCubic(raw);
+            this.visualPower = this._interpolateArray(from, to, eased);
+            this.visualGroupUtil = this._interpolateGroupUtil(fromGroups, toGroups, eased);
+            this._draw();
+            if (raw < 1) {
+                this.methodAnimationFrame = window.requestAnimationFrame(tick);
+            } else {
+                this.methodAnimationFrame = 0;
+                this.visualPower = null;
+                this.visualGroupUtil = null;
+                this._draw();
+            }
+        };
+        this.methodAnimationFrame = window.requestAnimationFrame(tick);
+    }
+
     _scheduleCompute(delay = 90) {
         window.clearTimeout(this.pendingCompute);
         this.pendingCompute = window.setTimeout(() => this._computeAll(), delay);
@@ -1096,21 +1704,6 @@ class LiveRunJsacLab extends HTMLElement {
         this.$field.addEventListener('pointercancel', () => {
             this.drag?.el?.classList.remove('is-dragging');
             this.drag = null;
-        });
-        this.$field.addEventListener('keydown', (ev) => {
-            const node = ev.target.closest?.('.node');
-            if (!node) return;
-            const keyMap = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] };
-            if (!(ev.key in keyMap)) return;
-            ev.preventDefault();
-            const index = Number(node.dataset.index);
-            const kind = node.dataset.kind;
-            const step = ev.shiftKey ? 10 : 2;
-            const [dx, dy] = keyMap[ev.key];
-            this._moveNode(kind, index, dx * step, dy * step);
-            this.selected = { kind, index };
-            this._draw();
-            this._scheduleCompute(0);
         });
     }
 
@@ -1157,11 +1750,24 @@ class LiveRunJsacLab extends HTMLElement {
         this._drawField();
         this._drawMetrics();
         this._drawBudgets();
+        this._drawLayerTrace();
+        this._drawHistory();
+        this._drawWmmseTrace();
         this._drawHeatmap();
     }
 
     _selectedPower() {
-        return this.results?.[this.selectedMethod]?.power || new Array(this._k()).fill(0);
+        return this.visualPower || this._displaySource()?.[this.selectedMethod]?.power || new Array(this._k()).fill(0);
+    }
+
+    _selectedMethodResult() {
+        const result = this._displaySource()?.[this.selectedMethod];
+        if (!result || (!this.visualPower && !this.visualGroupUtil)) return result;
+        return {
+            ...result,
+            power: this.visualPower || result.power,
+            groupUtil: this.visualGroupUtil || result.groupUtil,
+        };
     }
 
     _drawField() {
@@ -1170,7 +1776,7 @@ class LiveRunJsacLab extends HTMLElement {
         const field = this._fieldLength();
         svg.setAttribute('viewBox', `0 0 ${field} ${field}`);
         const power = this._selectedPower();
-        const method = this.results?.[this.selectedMethod];
+        const method = this._selectedMethodResult();
         const meta = this.last?.meta || this._metadata();
         const losses = this._hasCurrentLosses() ? this.last.losses : null;
 
@@ -1191,11 +1797,12 @@ class LiveRunJsacLab extends HTMLElement {
             }
             edges.sort((a, b) => b.score - a.score);
             const maxScore = edges[0]?.score || 1;
-            for (const e of edges.slice(0, Math.min(90, edges.length))) {
+            edges.slice(0, Math.min(90, edges.length)).forEach((e, n) => {
                 const tx = this.blue[meta.groupIds[e.source]];
                 const rx = this.rx[e.target];
                 const op = clamp(0.07 + 0.36 * Math.sqrt(e.score / (maxScore + JSAC_EPS)), 0.07, 0.43);
                 svg.appendChild(svgEl('line', {
+                    class: 'message-edge',
                     x1: tx.x,
                     y1: tx.y,
                     x2: rx.x,
@@ -1203,8 +1810,9 @@ class LiveRunJsacLab extends HTMLElement {
                     stroke: `rgba(160,170,180,${op})`,
                     'stroke-width': 0.55,
                     'stroke-dasharray': '2 2.6',
+                    style: `--edge-delay:${(n % 8) * 0.08}s`,
                 }));
-            }
+            });
         }
 
         for (let i = 0; i < meta.k; i++) {
@@ -1234,8 +1842,7 @@ class LiveRunJsacLab extends HTMLElement {
                 stroke: `rgba(77,163,255,${0.14 + util * 0.35})`,
                 'stroke-width': 2,
             }));
-            const group = svgEl('g', { class: 'node', tabindex: 0, 'data-kind': 'blue', 'data-index': b, role: 'button', 'aria-label': `Blue car ${b}` });
-            group.appendChild(svgEl('circle', { class: 'focus-ring', cx: blue.x, cy: blue.y, r: 8.6, fill: 'none', stroke: 'var(--c-orange)', 'stroke-width': 1.5, opacity: 0 }));
+            const group = svgEl('g', { class: 'node', 'data-kind': 'blue', 'data-index': b, 'aria-label': `Blue car ${b}` });
             group.appendChild(svgEl('rect', { x: blue.x - 4.2, y: blue.y - 4.2, width: 8.4, height: 8.4, rx: 1.2, fill: 'var(--c-blue)', opacity: 0.95 }));
             group.appendChild(svgEl('text', { class: 'node-label', x: blue.x + 5.8, y: blue.y + 1.6 }));
             group.lastChild.textContent = `B${b}`;
@@ -1247,8 +1854,7 @@ class LiveRunJsacLab extends HTMLElement {
             const isYellow = rx.type === 'yellow';
             const badYellow = Boolean(isYellow && method && method.sinr[i] < this.manifest.physics.sinr_min);
             const fill = isYellow ? 'var(--c-yellow)' : 'var(--c-green)';
-            const group = svgEl('g', { class: 'node', tabindex: 0, 'data-kind': 'rx', 'data-index': i, role: 'button', 'aria-label': `${isYellow ? 'Yellow' : 'Green'} receiver ${i}` });
-            group.appendChild(svgEl('circle', { class: 'focus-ring', cx: rx.x, cy: rx.y, r: 5.3, fill: 'none', stroke: 'var(--c-orange)', 'stroke-width': 1.4, opacity: 0 }));
+            const group = svgEl('g', { class: 'node', 'data-kind': 'rx', 'data-index': i, 'aria-label': `${isYellow ? 'Yellow' : 'Green'} receiver ${i}` });
             if (badYellow) {
                 group.appendChild(svgEl('circle', { cx: rx.x, cy: rx.y, r: 5.5, fill: 'none', stroke: 'rgba(255,99,99,0.95)', 'stroke-width': 1.5 }));
             }
@@ -1274,7 +1880,7 @@ class LiveRunJsacLab extends HTMLElement {
         }
         const i = this.selected.index;
         const r = this.rx[i];
-        const p = this.results?.[this.selectedMethod]?.power?.[i];
+        const p = method?.power?.[i];
         const sinr = method?.sinr?.[i];
         const rate = method?.rates?.[i];
         this.$selected.textContent = `${r.type.toUpperCase()}${i} - B${r.blue} ch${r.channel} / p ${fmt(p, 2)} / SINR ${fmt(sinr, 2)} / rate ${fmt(rate, 2)}`;
@@ -1282,18 +1888,15 @@ class LiveRunJsacLab extends HTMLElement {
 
     _drawMetrics() {
         const methods = ['WMMSE', 'GNN', 'Naive'];
+        const display = this._displaySource();
         this.$metrics.innerHTML = '';
         for (const method of methods) {
-            const r = this.results?.[method];
+            const r = display?.[method];
             const row = document.createElement('div');
             row.className = 'metric-row';
             row.classList.toggle('is-active', method === this.selectedMethod);
-            row.addEventListener('click', () => {
-                this.selectedMethod = method;
-                this._renderMethodTabs();
-                this._draw();
-            });
-            const viol = r ? `${r.yellowViolations}/${this.B * this.my}` : '--';
+            row.addEventListener('click', () => this._selectMethod(method));
+            const viol = r ? `${Math.round(r.yellowViolations)}/${this.B * this.my}` : '--';
             row.innerHTML = `
                 <span class="method-name" style="color:${this._methodColor(method)}">${method}</span>
                 <span>
@@ -1304,14 +1907,14 @@ class LiveRunJsacLab extends HTMLElement {
             `;
             this.$metrics.appendChild(row);
         }
-        if (this.results?.GNN) {
-            this._setStatus(`${this.results.GNN.engine} / JSAC GNN ${fmtMs(this.results.GNN.timeMs)} ms / B=${this.B} K=${this._k()}`);
+        if (display?.GNN) {
+            this._setStatus(`${display.GNN.engine} / JSAC GNN ${fmtMs(display.GNN.timeMs)} ms / B=${this.B} K=${this._k()}`);
         }
     }
 
     _drawBudgets() {
         this.$budgets.innerHTML = '';
-        const r = this.results?.[this.selectedMethod];
+        const r = this._selectedMethodResult();
         for (let b = 0; b < this.B; b++) {
             const util = r?.groupUtil?.[b] || { total: 0, yellow: 0, green: 0 };
             const yellowW = clamp(util.yellow, 0, 1) * 100;
@@ -1327,6 +1930,85 @@ class LiveRunJsacLab extends HTMLElement {
                 <span>${fmt(util.total, 2)}</span>
             `;
             this.$budgets.appendChild(row);
+        }
+    }
+
+    _drawLayerTrace() {
+        this.$layers.innerHTML = '';
+        const layers = this.layerTrace?.layers || [];
+        if (!layers.length) {
+            this.$layers.innerHTML = '<div class="metric-sub">Waiting for GNN weights.</div>';
+            return;
+        }
+        for (const layer of layers) {
+            const yellowW = clamp(layer.yellowAvg * this.resultAnimationT, 0, 1) * 100;
+            const greenW = clamp(layer.greenAvg * this.resultAnimationT, 0, 1) * 100;
+            const row = document.createElement('div');
+            row.className = 'layer-row';
+            row.innerHTML = `
+                <span>${layer.label}</span>
+                <span class="layer-track">
+                    <span class="layer-fill yellow" style="left:0;width:${yellowW}%"></span>
+                    <span class="layer-fill green" style="left:${yellowW}%;width:${greenW}%"></span>
+                </span>
+                <span>Y ${fmt(layer.yellowAvg, 2)} / G ${fmt(layer.greenAvg, 2)}</span>
+            `;
+            this.$layers.appendChild(row);
+        }
+    }
+
+    _drawHistory() {
+        this.$history.innerHTML = '';
+        const methods = ['WMMSE', 'GNN', 'Naive'];
+        if (!this.history.length) {
+            this.$history.innerHTML = '<div class="metric-sub">History appears after the first live solve.</div>';
+            return;
+        }
+        const max = Math.max(...this.history.flatMap((entry) => methods.map((method) => entry[method] || 0)), 1);
+        for (const method of methods) {
+            const row = document.createElement('div');
+            row.className = 'history-row';
+            row.classList.toggle('is-active', method === this.selectedMethod);
+            const color = this._methodColor(method);
+            const progress = this.historyAnimationMode === 'idle' ? 1 : this.resultAnimationT;
+            const bars = this.history.map((entry, index) => {
+                const h = clamp((entry[method] || 0) / max, 0, 1) * 100;
+                const shouldAnimate = this.historyAnimationMode === 'refresh' || (this.historyAnimationMode === 'append' && index === this.history.length - 1);
+                const scale = shouldAnimate ? progress : 1;
+                const opacity = shouldAnimate ? 0.18 + 0.74 * progress : '';
+                const opacityStyle = opacity === '' ? '' : `opacity:${opacity};`;
+                return `<span class="history-bar" style="height:${h * scale}%;--history-color:${color};${opacityStyle}"></span>`;
+            }).join('');
+            const latest = this.history[this.history.length - 1]?.[method];
+            row.innerHTML = `
+                <span style="color:${color}">${method}</span>
+                <span class="history-track">${bars}</span>
+                <span>${fmt(latest, 2)}</span>
+            `;
+            this.$history.appendChild(row);
+        }
+    }
+
+    _drawWmmseTrace() {
+        this.$wmmseTrace.innerHTML = '';
+        const trace = this.wmmseTrace || [];
+        if (!trace.length) {
+            this.$wmmseTrace.innerHTML = '<div class="metric-sub">Waiting for WMMSE solve.</div>';
+            return;
+        }
+        const max = Math.max(...trace.map((entry) => entry.greenSumRate), 1);
+        for (const entry of trace) {
+            const width = clamp(entry.greenSumRate / max, 0, 1) * this.resultAnimationT * 100;
+            const row = document.createElement('div');
+            row.className = 'layer-row';
+            row.innerHTML = `
+                <span>I${entry.iter}</span>
+                <span class="layer-track">
+                    <span class="layer-fill yellow" style="left:0;width:${width}%"></span>
+                </span>
+                <span>G ${fmt(entry.greenSumRate, 1)} / V ${entry.yellowViolations}</span>
+            `;
+            this.$wmmseTrace.appendChild(row);
         }
     }
 
