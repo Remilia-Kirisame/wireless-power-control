@@ -1,0 +1,58 @@
+{
+  "scenario": "d2d",
+  "max_k": 20,
+  "model": "d2d_igcnet_k20.onnx",
+  "weights_fallback": "d2d_igcnet_k20_weights.json",
+  "checkpoint": "Scenario_D2D/saves/gnn_model_K50.pth",
+  "runtime": {
+    "vendor": "../vendor/onnxruntime-web/ort.wasm.min.js",
+    "wasm_path": "../vendor/onnxruntime-web/"
+  },
+  "inputs": {
+    "x": [
+      20,
+      3
+    ],
+    "edge_attr": [
+      20,
+      20,
+      1
+    ],
+    "edge_mask": [
+      20,
+      20
+    ],
+    "node_mask": [
+      20
+    ]
+  },
+  "physics": {
+    "field_length": 1000,
+    "shortest_direct_link_length": 1,
+    "longest_direct_link_length": 20,
+    "shortest_cross_link_length": 30,
+    "tx_height": 1.5,
+    "rx_height": 1.5,
+    "carrier_f": 2400000000.0,
+    "antenna_gain_decibel": 2.5,
+    "tx_power": 10.0,
+    "output_noise_power": 6.294627058970857e-14,
+    "var_noise": 6.294627058970857e-15,
+    "threshold": 300,
+    "pmax": 1.0
+  },
+  "scalers": {
+    "dist": {
+      "diag_mean": 0.31103553043061294,
+      "diag_var": 0.4252454276604842,
+      "off_mean": 0.002790105865337259,
+      "off_var": 0.0038668968089954963
+    },
+    "loss": {
+      "diag_mean": 0.0055309111564572615,
+      "diag_var": 0.012816751963588858,
+      "off_mean": 1.2996274305434038e-05,
+      "off_var": 6.187783870093417e-05
+    }
+  }
+}

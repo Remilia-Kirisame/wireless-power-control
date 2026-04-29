@@ -13,6 +13,10 @@ The work proceeds in two scenarios that together form a single narrative:
 
 Both scenarios are first-class deliverables of the capstone. D2D produced the scaling result that justifies the method; JSAC demonstrates that the same architecture handles a constrained, structured problem.
 
+> [!note]
+>
+> For the static capstone showcase website and local viewing instructions, see [README_WEB.md](README_WEB.md).
+
 ---
 
 
@@ -92,9 +96,9 @@ pip install torch==2.8.0 torch-geometric==2.6.1 numpy==1.26.4 matplotlib==3.8.4
 
 ## How to Run
 
-It is recommended to use a virtual environment. If using the provided `.claude_venv`, activate it first:
+It is recommended to use a virtual environment. If using the provided `.venv_wpc`, activate it first:
 ```bash
-source .claude_venv/bin/activate
+source .venv_wpc/bin/activate
 ```
 
 All commands should be run from the root directory of the workspace. The modules use relative imports so executing them as modules or targeting the scripts directly is supported.

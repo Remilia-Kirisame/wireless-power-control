@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Wireless Power Control — Capstone Showcase</title>
+    <meta name="description" content="Approximating WMMSE with graph neural networks — a capstone showcase covering the classical interference channel and joint sensing-and-communication." />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" />
+
+    <link rel="stylesheet" href="styles.css?v=1.3.1" />
+
+    <script type="module" src="components/sweep-slider/sweep-slider.js"></script>
+    <script type="module" src="components/method-toggle/method-toggle.js"></script>
+    <script type="module" src="components/layout-gallery/layout-gallery.js?v=1.2"></script>
+    <script type="module" src="components/layout-viewer/layout-viewer.js?v=1.2"></script>
+    <script type="module" src="components/interference-sandbox/interference-sandbox.js"></script>
+    <script type="module" src="components/setup-diagram/setup-diagram.js"></script>
+    <script type="module" src="components/wmmse-iter/wmmse-iter.js"></script>
+    <script type="module" src="components/live-run-lab/live-run-lab.js?v=1.2.4"></script>
+    <script type="module" src="script.js?v=1.3.1"></script>
+</head>
+<body>
+    <!-- Entry overlay — title plate + orange load bar, wipes off after ~2s (see script.js) -->
+    <div class="entry-overlay" aria-hidden="true">
+        <div class="entry-stack">
+            <span class="entry-title">Wireless Power Control · Capstone</span>
+            <div class="entry-progress" aria-hidden="true"><span class="entry-progress-fill"></span></div>
+        </div>
+    </div>
+
+    <!-- Persistent left sidebar / tab navigation -->
+    <aside class="sidebar" aria-label="Primary navigation">
+        <div class="sidebar-head">
+            <span class="logo">Wireless Power<br />Control · Capstone</span>
+        </div>
+        <nav class="tab-nav">
+            <a href="#home" class="tab-link tab-home" data-view="home"><span class="tab-num">◀</span>Home</a>
+            <div class="tab-rule" aria-hidden="true"></div>
+            <a href="#problem" class="tab-link" data-view="problem"><span class="tab-num">01</span>Problem</a>
+            <a href="#d2d" class="tab-link" data-view="d2d"><span class="tab-num">02</span>D2D</a>
+            <a href="#method" class="tab-link" data-view="method"><span class="tab-num">03</span>Method</a>
+            <a href="#jsac" class="tab-link" data-view="jsac"><span class="tab-num">04</span>JSAC</a>
+            <a href="#deepdive" class="tab-link" data-view="deepdive"><span class="tab-num">05</span>Deep dive</a>
+            <a href="#liverun" class="tab-link" data-view="liverun"><span class="tab-num">06</span>Live Run</a>
+            <a href="#refs" class="tab-link" data-view="refs"><span class="tab-num">07</span>References</a>
+        </nav>
+        <div class="sidebar-foot">
+            <span class="live-readout">● LIVE · GNN ~<span class="num" data-live-ms>58</span>ms</span>
+        </div>
+    </aside>
+
+    <main class="views">
+        <!-- ============================================================
+             HOME · Landing view
+             ============================================================ -->
+        <section class="view view-home hero" id="home" data-view="home">
+            <div class="hero-body">
+                <span class="eyebrow">Capstone · 2026</span>
+                <h1>Approximating WMMSE with <span class="accent">graph neural networks</span> — for the classical interference channel, and for joint sensing-and-communication.</h1>
+                <p class="lede">
+                    A densely connected MLP stops scaling once the network grows past a handful of links.
+                    A weight-sharing graph network tracks iterative WMMSE across K and generalises to a
+                    harder, constrained problem it never saw during training.
+                </p>
+                <div class="hero-meta">
+                    <span><span class="key">AUTHOR</span><span class="val" data-site-meta="author"></span></span>
+                    <span><span class="key">AFFILIATION</span><span class="val" data-site-meta="affiliation"></span></span>
+                    <span><span class="key">DATE</span><span class="val" data-site-meta="date"></span></span>
+                </div>
+            </div>
+
+            <nav class="anchor-nav" aria-label="Enter the showcase">
+                <a href="#problem"><span class="num">01</span>Problem</a>
+                <a href="#d2d"><span class="num">02</span>D2D</a>
+                <a href="#method"><span class="num">03</span>Method</a>
+                <a href="#jsac"><span class="num">04</span>JSAC</a>
+                <a href="#deepdive"><span class="num">05</span>Deep dive</a>
+                <a href="#liverun"><span class="num">06</span>Live Run</a>
+                <a href="#refs"><span class="num">07</span>References</a>
+            </nav>
+        </section>
+
+        <!-- ============================================================
+             01 · PROBLEM
+             ============================================================ -->
+        <section class="view section section--narrow" id="problem" data-view="problem">
+            <div class="section-head reveal">
+                <span class="num-label">Section · 01</span>
+                <h2>The interference channel, and a solver that's too slow to deploy.</h2>
+            </div>
+
+            <div class="grid cols-2">
+                <div class="stack-md reveal">
+                    <p>
+                        Every receiver in a dense wireless network hears a signal of interest plus a crowd of
+                        interferers that happen to share the same frequency. The transmitter's leverage is power
+                        control &mdash; scaling each link up or down to keep its own SINR high without drowning
+                        its neighbours. For a K-link interference channel the sum-rate objective is
+                        non-convex, and iterative WMMSE is the practical optimum.
+                    </p>
+                    <p>
+                        WMMSE is also <em>slow</em>. Every evaluation in this work measures it: at K=50 a
+                        single topology takes roughly half a second, and it scales super-linearly from there.
+                        For dense, frequently-recomputed allocations &mdash; vehicular links, ad-hoc clusters,
+                        beam management &mdash; the inner loop is the deployment blocker, not the objective.
+                    </p>
+                    <p class="muted">
+                        The question motivating everything that follows: can a learned approximator recover
+                        WMMSE-quality allocations at a fraction of the runtime, and keep doing so as the
+                        network grows?
+                    </p>
+                </div>
+
+                <figure class="card reveal">
+                    <div class="stack-sm">
+                        <span class="eyebrow">SINR, link <span class="num">k</span></span>
+                        <div style="font-family: var(--font-mono); font-size: 14px; line-height: 1.9; color: var(--text);">
+                            <div>
+                                SINR<sub>k</sub> &nbsp;=&nbsp;
+                                <span style="color: var(--c-orange);">|h<sub>kk</sub>|²·p<sub>k</sub></span>
+                                &nbsp;/&nbsp;
+                                <span style="color: var(--text-dim);">(&nbsp;σ²&nbsp;+&nbsp;Σ<sub>j≠k</sub> |h<sub>kj</sub>|²·p<sub>j</sub>&nbsp;)</span>
+                            </div>
+                            <div class="muted" style="margin-top: 20px; font-size: 12px; letter-spacing: 0.04em;">
+                                Rate<sub>k</sub> &nbsp;=&nbsp; log₂(&nbsp;1 + SINR<sub>k</sub>&nbsp;)
+                            </div>
+                        </div>
+                        <div style="border-top: 1px dashed var(--rule); padding-top: 16px; margin-top: 8px;">
+                            <table style="width:100%;font-family:var(--font-mono);font-size:12px;color:var(--text-dim);">
+                                <tr>
+                                    <td>WMMSE @ K=5</td>
+                                    <td style="text-align:right;color:var(--text);" class="num">9 ms</td>
+                                </tr>
+                                <tr>
+                                    <td>WMMSE @ K=20</td>
+                                    <td style="text-align:right;color:var(--text);" class="num">52 ms</td>
+                                </tr>
+                                <tr>
+                                    <td>WMMSE @ K=40</td>
+                                    <td style="text-align:right;color:var(--text);" class="num">250 ms</td>
+                                </tr>
+                                <tr>
+                                    <td>WMMSE @ K=100 (extrapolated)</td>
+                                    <td style="text-align:right;color:var(--c-orange);" class="num">&gt; 2 s</td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                    <figcaption><span class="tag">FIG 01</span> Signal-to-interference-plus-noise on one link, plus measured WMMSE runtimes from <code>Scenario_D2D/saves/</code>.</figcaption>
+                </figure>
+            </div>
+
+            <div class="stack-md reveal" style="margin-top: 56px;">
+                <h3>Watch the iteration <span class="muted" style="font-weight: 400; font-size: 16px;">— hit play, raise K, feel the wall clock grow.</span></h3>
+                <p class="muted" style="max-width: 64ch;">
+                    Initial state: every link transmits at full power. WMMSE alternates between updating
+                    receiver filters and re-allocating transmit power; weak links get silenced so strong
+                    ones stop drowning each other out. The dashed line is the converged sum-rate &mdash;
+                    the algorithm chases it, but the last few percent take most of the iterations.
+                </p>
+                <wmmse-iter></wmmse-iter>
+            </div>
+        </section>
+
+        <!-- ============================================================
+             02 · D2D  (Foundation)
+             ============================================================ -->
+        <section class="view section" id="d2d" data-view="d2d">
+            <div class="section-head reveal">
+                <span class="num-label">Section · 02 · Foundation</span>
+                <h2>Scenario 1 · Device-to-device. Where the GNN earned the problem.</h2>
+            </div>
+
+            <!-- 6.3.1 Setup -->
+            <div class="scenario-setup reveal" style="margin-bottom: 56px;">
+                <div class="stack-md">
+                    <h3>Setup</h3>
+                    <p class="lede">
+                        K transceiver pairs drop uniformly into a square field. Each Tx serves its
+                        own Rx, while every other link on the same channel leaks interference.
+                        Channels follow path-loss, log-normal shadowing, and Rayleigh fading &mdash;
+                        the textbook interference-channel benchmark.
+                    </p>
+                    <p class="muted">
+                        Goal: pick a power vector <code>p ∈ [0, P_max]<sup>K</sup></code>
+                        that maximises sum-rate. We compare a supervised MLP and an unsupervised GNN
+                        against iterative WMMSE.
+                    </p>
+                </div>
+                <div class="diagram" aria-hidden="true">
+                    <setup-diagram variant="d2d"></setup-diagram>
+                </div>
+            </div>
+
+            <!-- 6.3.2 Two models -->
+            <div class="stack-md reveal" style="margin-bottom: 48px;">
+                <h3>Two models we built</h3>
+                <p class="muted">Same problem, same data, two architectures.</p>
+                <div class="grid cols-2">
+                    <div class="card arch-card is-dnn">
+                        <div class="arch-title"><span class="arch-dot"></span>DNN &mdash; supervised MLP</div>
+                        <div class="arch-sub">Flattened |h|² input, K-dim power output. Mean-squared error against WMMSE allocations.</div>
+                        <table>
+                            <tr><td>Input shape</td><td>K² floats</td></tr>
+                            <tr><td>Output shape</td><td>K floats</td></tr>
+                            <tr><td>Hidden layers</td><td>3 × dense</td></tr>
+                            <tr><td>Parameters</td><td class="num">O(K²)</td></tr>
+                            <tr><td>Loss</td><td>MSE vs WMMSE</td></tr>
+                            <tr><td>Scales with K?</td><td style="color: var(--c-violet);">no — re-train per K</td></tr>
+                        </table>
+                    </div>
+                    <div class="card arch-card is-gnn">
+                        <div class="arch-title"><span class="arch-dot"></span>GNN &mdash; IGCNet</div>
+                        <div class="arch-sub">4 stacked message-passing layers with <code>aggr='max'</code>, unsupervised sum-rate loss.</div>
+                        <table>
+                            <tr><td>Input</td><td>per-node features</td></tr>
+                            <tr><td>Output</td><td>scalar per node</td></tr>
+                            <tr><td>Conv layers</td><td>4 × IGConv (max)</td></tr>
+                            <tr><td>Parameters</td><td class="num">~5k, K-independent</td></tr>
+                            <tr><td>Loss</td><td>−sum-rate (unsupervised)</td></tr>
+                            <tr><td>Scales with K?</td><td style="color: var(--c-orange);">yes — one model for all</td></tr>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 6.3.3 HEADLINE — D2D scaling slider (sweep-slider C') -->
+            <div class="stack-md reveal" style="margin-bottom: 48px;">
+                <h3>The scaling finding <span class="muted" style="font-weight: 400; font-size: 16px;">— drag K to see the gap open.</span></h3>
+                <sweep-slider
+                    data-src="assets/data/d2d_sweep_K.json"
+                    data-x-key="K"
+                    data-x-label="Number of transceiver pairs (K)"
+                    data-y-label="Sum-rate (bits/s/Hz)"
+                    data-metric="sum_rate_ratio_vs_wmmse"
+                    data-metrics='[
+                        {"key":"sum_rate_ratio_vs_wmmse","label":"Sum-rate / WMMSE","unit":"×","fmt":"ratio"},
+                        {"key":"sum_rate","label":"Sum-rate","unit":"bits/s/Hz","fmt":"fixed"},
+                        {"key":"inference_ms","label":"Inference","unit":"ms","fmt":"log"}
+                    ]'
+                    data-series='[
+                        {"key":"WMMSE","color":"var(--c-blue)"},
+                        {"key":"GNN","color":"var(--c-orange)"},
+                        {"key":"DNN","color":"var(--c-violet)"},
+                        {"key":"Greedy","color":"var(--c-grey)"}
+                    ]'
+                    data-hint="drag K to explore">
+                </sweep-slider>
+            </div>
+
+            <!-- 6.3.4 Why DNN scales poorly -->
+            <div class="grid cols-2 reveal" style="margin-bottom: 64px;">
+                <div class="stack-md">
+                    <h3>Why the DNN stalls</h3>
+                    <p>
+                        The MLP bolts its input and output dimensions to K. Go from K=10 to K=50 and
+                        the weight matrices have to be rebuilt, retrained, and scaled up by the square
+                        of the link count. Nothing about a 10-link solution is reusable for a 50-link one.
+                    </p>
+                    <p>
+                        The GNN passes one small module across however many nodes you hand it &mdash;
+                        parameter count does not depend on K at all. A model trained on one size runs
+                        unchanged on the next, and the message-passing aggregator lets every node peek at
+                        its neighbours exactly the way WMMSE's weighted-MMSE update does.
+                    </p>
+                </div>
+                <div class="card card--quiet">
+                    <table style="width:100%;font-family:var(--font-mono);font-size:12px;">
+                        <thead>
+                            <tr>
+                                <th style="text-align:left;padding:8px 0;color:var(--text-mute);letter-spacing:0.1em;text-transform:uppercase;">Model</th>
+                                <th style="text-align:right;padding:8px 0;color:var(--text-mute);letter-spacing:0.1em;text-transform:uppercase;">Input</th>
+                                <th style="text-align:right;padding:8px 0;color:var(--text-mute);letter-spacing:0.1em;text-transform:uppercase;">Output</th>
+                                <th style="text-align:right;padding:8px 0;color:var(--text-mute);letter-spacing:0.1em;text-transform:uppercase;">Params</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td style="padding:10px 0;color:var(--c-violet);">MLP</td>
+                                <td style="text-align:right;padding:10px 0;color:var(--text);">K² floats</td>
+                                <td style="text-align:right;padding:10px 0;color:var(--text);">K floats</td>
+                                <td style="text-align:right;padding:10px 0;color:var(--text);">O(K²)</td>
+                            </tr>
+                            <tr>
+                                <td style="padding:10px 0;color:var(--c-orange);">GNN</td>
+                                <td style="text-align:right;padding:10px 0;color:var(--text);">per-node</td>
+                                <td style="text-align:right;padding:10px 0;color:var(--text);">per-node</td>
+                                <td style="text-align:right;padding:10px 0;color:var(--text);">~5k</td>
+                            </tr>
+                            <tr>
+                                <td style="padding:10px 0;color:var(--c-blue);">WMMSE</td>
+                                <td style="text-align:right;padding:10px 0;color:var(--text-dim);">channel matrix</td>
+                                <td style="text-align:right;padding:10px 0;color:var(--text-dim);">K-vec</td>
+                                <td style="text-align:right;padding:10px 0;color:var(--text-dim);">iterative</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- 6.3.5 QoS variant -->
+            <div class="stack-md reveal">
+                <h3>Optional &mdash; QoS-constrained variant</h3>
+                <p class="muted">
+                    A soft minimum-rate constraint per user can be baked into the loss. Unconstrained
+                    WMMSE routinely starves the weakest links; the QoS-trained GNN trades a modest
+                    slice of sum-rate for far fewer violations. Data lives in
+                    <code>Scenario_D2D/saves_QoS/</code>.
+                </p>
+                <figure>
+                    <img src="assets/images/figures/d2d_qos_cdf.svg" alt="Per-user rate CDF for WMMSE and GNN variants under a minimum-rate constraint" style="max-width: 720px; width: 100%; margin: 0; border-radius: var(--radius-card);" />
+                    <figcaption><span class="tag">FIG 02</span> Per-user rate CDF at K=50, with the r<sub>min</sub> threshold overlaid. The QoS-trained GNN variants push noticeably more mass above r<sub>min</sub> than the unconstrained baselines.</figcaption>
+                </figure>
+            </div>
+        </section>
+
+        <!-- ============================================================
+             03 · METHOD BRIDGE
+             ============================================================ -->
+        <section class="view section section--narrow" id="method" data-view="method">
+            <div class="section-head reveal">
+                <span class="num-label">Section · 03 · Method</span>
+                <h2>Why a graph network &mdash; one module, every link.</h2>
+            </div>
+
+            <div class="stack-lg reveal">
+                <div class="bridge-diagram">
+                    <div class="bridge-box">node features<span class="sub">|h<sub>kk</sub>|², type</span></div>
+                    <div class="bridge-arrow">→</div>
+                    <div class="bridge-box is-core">4 × IGConv<span class="sub">aggr = max</span></div>
+                    <div class="bridge-arrow">→</div>
+                    <div class="bridge-box">per-node head<span class="sub">→ p<sub>k</sub></span></div>
+                </div>
+
+                <div class="bridge-callouts">
+                    <div class="cal"><b>Weight sharing.</b> One small MLP is reused for every node, however many nodes there are.</div>
+                    <div class="cal"><b>O(|E|) inference.</b> Cost grows with edges, not with K squared.</div>
+                    <div class="cal"><b>K-independent.</b> Trained at one size, evaluated at any size.</div>
+                </div>
+
+                <p class="muted" style="max-width: 64ch; margin-top: 12px;">
+                    The architecture is IGCNet from Shen et al. &mdash; four stacked message-passing layers
+                    with <code>aggr='max'</code> that iteratively refine a scalar power logit on each link-node.
+                    In JSAC the output head is a per-group softmax instead of a per-link sigmoid; the rest is
+                    unchanged.
+                </p>
+            </div>
+        </section>
+
+        <!-- ============================================================
+             04 · JSAC (Application)
+             ============================================================ -->
+        <section class="view section" id="jsac" data-view="jsac">
+            <div class="section-head reveal">
+                <span class="num-label">Section · 04 · Application</span>
+                <h2>Scenario 2 · Joint sensing &amp; communication. The GNN on a harder problem.</h2>
+            </div>
+
+            <!-- 6.5.1 Setup -->
+            <div class="scenario-setup reveal" style="margin-bottom: 56px;">
+                <div class="stack-md">
+                    <h3>Setup</h3>
+                    <p class="lede">
+                        B Blue-car transmitters cluster on a road; each serves M<sub>y</sub> Yellow
+                        sensing receivers and M<sub>g</sub> Green communication receivers over
+                        M = M<sub>y</sub>+M<sub>g</sub> orthogonal channels. Same-channel links across
+                        <em>different</em> Blue cars interfere; intra-cluster channels are orthogonal by
+                        construction.
+                    </p>
+                    <p class="muted">
+                        Two new constraints shape the problem: a hard per-Blue-car power budget (enforced
+                        by construction via per-group softmax) and a soft Yellow-SINR floor (squared
+                        hinge penalty in the loss).
+                    </p>
+                </div>
+                <div class="diagram" aria-hidden="true">
+                    <setup-diagram variant="jsac"></setup-diagram>
+                </div>
+            </div>
+
+            <!-- 6.5.2 What's new -->
+            <div class="grid cols-3 reveal" style="margin-bottom: 56px;">
+                <div class="card">
+                    <h4 style="color: var(--c-blue);">Two edge types</h4>
+                    <p class="muted" style="margin-top: 8px;">Interference across Blue clusters <em>and</em> intra-group coordination within a cluster flow through the graph.</p>
+                </div>
+                <div class="card">
+                    <h4 style="color: var(--c-orange);">Hard group budget</h4>
+                    <p class="muted" style="margin-top: 8px;">Per-Blue-car softmax on the GNN output enforces <code>Σ<sub>g</sub>p = P<sub>max</sub></code> by construction &mdash; no projection step.</p>
+                </div>
+                <div class="card">
+                    <h4 style="color: var(--c-yellow);">Soft Yellow floor</h4>
+                    <p class="muted" style="margin-top: 8px;">Squared-hinge penalty on SINR<sub>min</sub>−SINR<sub>y</sub> pushes the model to respect sensing requirements.</p>
+                </div>
+            </div>
+
+            <!-- 6.5.3 Results 2×2 -->
+            <div class="stack-md reveal" style="margin-bottom: 48px;">
+                <h3>Results &mdash; sweep over topology</h3>
+                <p class="muted">Left column: Green sum-rate (bigger is better). Right column: Yellow violation % (smaller is better). Top row sweeps B; bottom row sweeps (M<sub>y</sub>, M<sub>g</sub>).</p>
+
+                <div class="grid cols-2">
+                    <sweep-slider
+                        data-src="assets/data/sweep_B.json"
+                        data-x-key="B"
+                        data-x-label="Number of Blue cars (B)"
+                        data-metric="green_sumrate"
+                        data-metrics='[
+                            {"key":"green_sumrate","label":"Green sum-rate","unit":"b/s/Hz","fmt":"fixed"}
+                        ]'
+                        data-series='[
+                            {"key":"Naive","color":"var(--c-grey)"},
+                            {"key":"WMMSE","color":"var(--c-blue)"},
+                            {"key":"GNN","color":"var(--c-orange)"}
+                        ]'
+                        data-hint="drag B to explore"
+                        data-compact="true">
+                    </sweep-slider>
+
+                    <sweep-slider
+                        data-src="assets/data/sweep_B.json"
+                        data-x-key="B"
+                        data-x-label="Number of Blue cars (B)"
+                        data-metric="yellow_violation_pct"
+                        data-metrics='[
+                            {"key":"yellow_violation_pct","label":"Yellow violation","unit":"%","fmt":"fixed"}
+                        ]'
+                        data-series='[
+                            {"key":"Naive","color":"var(--c-grey)"},
+                            {"key":"WMMSE","color":"var(--c-blue)"},
+                            {"key":"GNN","color":"var(--c-orange)"}
+                        ]'
+                        data-hint="drag B to explore"
+                        data-compact="true">
+                    </sweep-slider>
+
+                    <sweep-slider
+                        data-src="assets/data/sweep_M.json"
+                        data-x-key="M"
+                        data-x-label="Links per Blue car (M = My+Mg)"
+                        data-metric="green_sumrate"
+                        data-metrics='[
+                            {"key":"green_sumrate","label":"Green sum-rate","unit":"b/s/Hz","fmt":"fixed"}
+                        ]'
+                        data-series='[
+                            {"key":"Naive","color":"var(--c-grey)"},
+                            {"key":"WMMSE","color":"var(--c-blue)"},
+                            {"key":"GNN","color":"var(--c-orange)"}
+                        ]'
+                        data-hint="drag M to explore"
+                        data-compact="true">
+                    </sweep-slider>
+
+                    <sweep-slider
+                        data-src="assets/data/sweep_M.json"
+                        data-x-key="M"
+                        data-x-label="Links per Blue car (M = My+Mg)"
+                        data-metric="yellow_violation_pct"
+                        data-metrics='[
+                            {"key":"yellow_violation_pct","label":"Yellow violation","unit":"%","fmt":"fixed"}
+                        ]'
+                        data-series='[
+                            {"key":"Naive","color":"var(--c-grey)"},
+                            {"key":"WMMSE","color":"var(--c-blue)"},
+                            {"key":"GNN","color":"var(--c-orange)"}
+                        ]'
+                        data-hint="drag M to explore"
+                        data-compact="true">
+                    </sweep-slider>
+                </div>
+            </div>
+
+            <!-- 6.5.4 Runtime table -->
+            <div class="card card--quiet reveal" style="margin-bottom: 56px;">
+                <h4 style="margin-bottom: 16px;">Inference time on the largest topology</h4>
+                <table class="runtime-table" aria-label="Per-method inference time at largest topology">
+                    <thead>
+                        <tr>
+                            <th>Method</th>
+                            <th>B = 13, K = 65</th>
+                            <th>M = 10, K = 100</th>
+                            <th>Wall clock</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><span class="dot" style="background: var(--c-grey);"></span>Naive</td>
+                            <td class="num">0.04 ms</td>
+                            <td class="num">0.06 ms</td>
+                            <td class="muted">baseline</td>
+                        </tr>
+                        <tr>
+                            <td><span class="dot" style="background: var(--c-blue);"></span>WMMSE</td>
+                            <td class="num">512 ms</td>
+                            <td class="num">2199 ms</td>
+                            <td class="muted">iterative</td>
+                        </tr>
+                        <tr class="is-highlighted">
+                            <td><span class="dot" style="background: var(--c-orange);"></span>GNN</td>
+                            <td class="num">180 ms</td>
+                            <td class="num">415 ms</td>
+                            <td class="muted">one forward pass</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <p class="muted" style="font-size: 13px; margin-top: 12px;">Measured on CPU, averaged across the evaluation set. Source: <code>Scenario_JSAC/save_main/results_sweep_*.pkl</code>.</p>
+            </div>
+
+            <!-- Layout gallery -->
+            <div class="stack-md reveal">
+                <h3>Layout gallery &mdash; what the allocation actually does</h3>
+                <p class="muted">Same topology, three allocation methods. Rx brightness encodes allocated power; dashed grey lines are same-channel interference across Blue clusters.</p>
+                <layout-gallery data-src="assets/data/layouts_index.json"></layout-gallery>
+            </div>
+        </section>
+
+        <!-- ============================================================
+             05 · DEEP DIVE
+             ============================================================ -->
+        <section class="view section" id="deepdive" data-view="deepdive">
+            <div class="section-head reveal">
+                <span class="num-label">Section · 05 · Deep dive</span>
+                <h2>Power allocations, up close. Drag, nudge, feel the physics.</h2>
+            </div>
+
+            <div class="stack-lg reveal">
+                <div class="stack-md">
+                    <h3>JSAC &mdash; per-layout power map</h3>
+                    <p class="muted">Each Blue-car owns a fixed power budget. Click a Blue-car to isolate its cluster; toggle methods to watch the allocation rebalance.</p>
+                    <layout-viewer data-src="assets/data/layouts/jsac_layout_01.json"></layout-viewer>
+                </div>
+
+                <div class="stack-md">
+                    <h3>Interference physics &mdash; drag a transmitter</h3>
+                    <p class="muted">Six transmitters on a field. Grab one, watch the channel-magnitude matrix redraw itself. Pure path-loss physics &mdash; no model inference here.</p>
+                    <interference-sandbox></interference-sandbox>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============================================================
+             06 · LIVE RUN
+             ============================================================ -->
+        <section class="view section" id="liverun" data-view="liverun">
+            <div class="section-head reveal">
+                <span class="num-label">Section · 06 · Live Run</span>
+                <h2>The learned optimizer, running in the browser.</h2>
+            </div>
+
+            <div class="stack-md reveal" style="margin-bottom: 28px;">
+                <p class="lede">
+                    Draw or reshape wireless layouts, then compare the iterative WMMSE reference,
+                    the exported GNN, and the scenario-specific browser baseline.
+                </p>
+                <p class="muted">
+                    D2D uses WMMSE / GNN / Greedy. JSAC uses WMMSE / GNN / Naive equal power,
+                    with per-Blue budget meters and Yellow SINR constraint status.
+                </p>
+            </div>
+
+            <div class="reveal">
+                <live-run-lab></live-run-lab>
+            </div>
+        </section>
+
+        <!-- ============================================================
+             07 · REFERENCES
+             ============================================================ -->
+        <section class="view section section--narrow" id="refs" data-view="refs">
+            <div class="section-head reveal">
+                <span class="num-label">Section · 07</span>
+                <h2>References.</h2>
+            </div>
+
+            <div class="refs reveal">
+                <div class="ref">
+                    <span class="ref-tag">W1P1</span>
+                    <div>
+                        <span class="ref-title">Shi et al. &mdash; An Iteratively Weighted MMSE Approach to Distributed Sum-Utility Maximization for a MIMO Interfering Broadcast Channel.</span>
+                        <span>IEEE Trans. Signal Process., 2011 · <a href="https://doi.org/10.1109/TSP.2011.2147784" target="_blank" rel="noreferrer">DOI 10.1109/TSP.2011.2147784</a></span>
+                    </div>
+                </div>
+                <div class="ref">
+                    <span class="ref-tag">W2P2</span>
+                    <div>
+                        <span class="ref-title">Sun et al. &mdash; Learning to Optimize: Training Deep Neural Networks for Interference Management.</span>
+                        <span>IEEE Trans. Signal Process., 2018 · <a href="https://doi.org/10.1109/TSP.2018.2866382" target="_blank" rel="noreferrer">DOI 10.1109/TSP.2018.2866382</a></span>
+                    </div>
+                </div>
+                <div class="ref">
+                    <span class="ref-tag">W4P2</span>
+                    <div>
+                        <span class="ref-title">Shen et al. &mdash; Graph Neural Networks for Scalable Radio Resource Management: Architecture Design and Theoretical Analysis.</span>
+                        <span>IEEE J. Sel. Areas Commun., 2021 · <a href="https://doi.org/10.1109/JSAC.2020.3036965" target="_blank" rel="noreferrer">DOI 10.1109/JSAC.2020.3036965</a></span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <footer class="site-footer">
+            <span data-site-meta="byline"></span>
+            <span><a href="https://github.com/Remilia-Kirisame/wireless-power-control" target="_blank" rel="noreferrer">repository</a> · commit <span class="num">7603338</span></span>
+        </footer>
+    </main>
+</body>
+</html>
