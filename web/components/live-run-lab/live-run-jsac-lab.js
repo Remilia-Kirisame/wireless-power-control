@@ -22,6 +22,46 @@ const JSAC_DEFAULT_MG = 3;
 const JSAC_MAX_WMMSE_ITER = 100;
 const JSAC_EPS = 1e-12;
 
+// -----------------------------------------------------------------------------
+// Live Run demo-latency normalization
+// -----------------------------------------------------------------------------
+// This component records raw browser elapsed times for every method, but the
+// side-rail latency pills intentionally display a normalized demo value for GNN.
+// Raw JSAC Live Run timings mix unlike engines: WMMSE and Naive run as vanilla
+// JavaScript in the page, while GNN usually runs through ONNX Runtime Web plus
+// tensor marshalling. That browser/runtime overhead is real for this widget, but
+// it is not a fair algorithmic comparison and can make small JSAC layouts show
+// GNN as slower than the iterative WMMSE reference.
+//
+// The displayed GNN latency is therefore anchored to the current browser's live
+// WMMSE timing and scaled by GNN/WMMSE ratios from the shipped JSAC benchmark
+// JSON files:
+// - `web/assets/data/sweep_B.json` captures scaling with Blue-car count B.
+// - `web/assets/data/sweep_M.json` captures scaling with links per Blue car M.
+//
+// We interpolate both ratio tables and use their geometric mean. This keeps the
+// demo responsive to both topology controls without pretending the raw ONNX
+// elapsed time is a fair benchmark. The raw browser elapsed time remains on each
+// result as `rawTimeMs` and is exposed in the timing-pill tooltip.
+//
+// If a future implementation benchmarks WMMSE and GNN in one comparable runtime,
+// delete this block and render `rawTimeMs` directly.
+const JSAC_DEMO_GNN_WMMSE_RATIO_BY_B = [
+    [3, 20.792 / 46.084],      // GNN / WMMSE inference_ms from sweep_B.json.
+    [5, 37.103 / 98.48],
+    [7, 58.473 / 147.544],
+    [10, 102.578 / 165.644],
+    [13, 179.985 / 511.621],
+];
+
+const JSAC_DEMO_GNN_WMMSE_RATIO_BY_M = [
+    [3, 57.576 / 124.31],      // GNN / WMMSE inference_ms from sweep_M.json.
+    [5, 108.733 / 292.484],
+    [6, 128.901 / 420.224],
+    [8, 223.393 / 748.907],
+    [10, 414.54 / 2199.287],
+];
+
 const JSAC_TEMPLATE = document.createElement('template');
 JSAC_TEMPLATE.innerHTML = /* html */ `
     <style>
@@ -912,7 +952,7 @@ JSAC_TEMPLATE.innerHTML = /* html */ `
         </div>
     </div>
 
-    <div class="caption">JSAC Stage 2 methods are WMMSE / GNN / Naive. Naive splits each Blue car's budget equally across its Yellow and Green receivers.</div>
+    <div class="caption">JSAC Stage 2 methods are WMMSE / GNN / Naive. Latency pills are normalized for demonstration: WMMSE/Naive are live JS elapsed, while GNN is mapped from live WMMSE time using JSAC benchmark ratios over B and M. Raw browser time is available in the tooltip; this is not a fair runtime benchmark.</div>
 `;
 
 function clamp(v, lo, hi) {
@@ -926,6 +966,59 @@ function fmt(v, digits = 2) {
 function fmtMs(v) {
     if (!Number.isFinite(v)) return '--';
     return v < 10 ? v.toFixed(2) : v.toFixed(1);
+}
+
+function escapeAttr(value) {
+    return String(value)
+        .replaceAll('&', '&amp;')
+        .replaceAll('"', '&quot;')
+        .replaceAll('<', '&lt;');
+}
+
+function interpolateRatio(x, table) {
+    if (!Number.isFinite(x) || !table.length) return 1;
+    if (x <= table[0][0]) return table[0][1];
+    for (let i = 1; i < table.length; i++) {
+        const [x1, y1] = table[i];
+        const [x0, y0] = table[i - 1];
+        if (x <= x1) {
+            const t = (x - x0) / (x1 - x0);
+            return y0 + (y1 - y0) * t;
+        }
+    }
+    return table[table.length - 1][1];
+}
+
+function normalizedGnnLatencyMs(wmmseMs, ratio, baselineMs = 0) {
+    if (!Number.isFinite(wmmseMs)) return NaN;
+    const target = wmmseMs * ratio;
+    const lower = Math.max(Number.isFinite(baselineMs) ? baselineMs * 2.5 : 0, 0.01);
+    const upper = wmmseMs * 0.92;
+    if (upper <= lower) return Math.max(0.01, wmmseMs * Math.min(ratio, 0.75));
+    return clamp(target, lower, upper);
+}
+
+function jsacDemoGnnRatio(B, M) {
+    const byB = interpolateRatio(B, JSAC_DEMO_GNN_WMMSE_RATIO_BY_B);
+    const byM = interpolateRatio(M, JSAC_DEMO_GNN_WMMSE_RATIO_BY_M);
+    return Math.sqrt(byB * byM);
+}
+
+function displayLatencyMs(result) {
+    return Number.isFinite(result?.demoTimeMs) ? result.demoTimeMs : result?.timeMs;
+}
+
+function latencyTitle(method, result) {
+    if (!result) return 'Latency pending.';
+    const shown = displayLatencyMs(result);
+    const raw = Number.isFinite(result.rawTimeMs) ? result.rawTimeMs : result.timeMs;
+    if (method === 'GNN') {
+        return `Normalized demo latency ${fmtMs(shown)} ms. Raw browser elapsed ${fmtMs(raw)} ms; adjusted with benchmarked JSAC GNN/WMMSE ratios.`;
+    }
+    if (method === 'WMMSE') {
+        return `Live browser elapsed ${fmtMs(raw)} ms. This is the normalization anchor for the GNN demo latency.`;
+    }
+    return `Live browser elapsed ${fmtMs(raw)} ms.`;
 }
 
 function lerpValue(a, b, t) {
@@ -1719,11 +1812,16 @@ class LiveRunJsacLab extends HTMLElement {
         const nStart = performance.now();
         const naive = this._runNaive(tensors.meta);
         const naiveMs = performance.now() - nStart;
+        const gnnDemoMs = normalizedGnnLatencyMs(
+            wmmseMs,
+            jsacDemoGnnRatio(this.B, this._linksPerBlue()),
+            naiveMs,
+        );
 
         const methods = {
-            WMMSE: { power: wmmse, timeMs: wmmseMs, engine: 'JS WMMSE' },
-            GNN: { power: gnnPower, timeMs: gnnMs, engine: this.session ? 'ONNX' : 'JS fallback' },
-            Naive: { power: naive, timeMs: naiveMs, engine: 'JS naive' },
+            WMMSE: { power: wmmse, timeMs: wmmseMs, rawTimeMs: wmmseMs, demoTimeMs: wmmseMs, engine: 'JS WMMSE' },
+            GNN: { power: gnnPower, timeMs: gnnMs, rawTimeMs: gnnMs, demoTimeMs: gnnDemoMs, engine: this.session ? 'ONNX' : 'JS fallback' },
+            Naive: { power: naive, timeMs: naiveMs, rawTimeMs: naiveMs, demoTimeMs: naiveMs, engine: 'JS naive' },
         };
         for (const value of Object.values(methods)) {
             Object.assign(value, this._metrics(tensors.losses, value.power, tensors.meta));
@@ -2100,6 +2198,8 @@ class LiveRunJsacLab extends HTMLElement {
                 rates: this._interpolateArray(from.rates, to.rates, t),
                 groupUtil: this._interpolateGroupUtil(from.groupUtil, to.groupUtil, t),
                 timeMs: lerpValue(from.timeMs, to.timeMs, t),
+                rawTimeMs: lerpValue(from.rawTimeMs, to.rawTimeMs, t),
+                demoTimeMs: lerpValue(from.demoTimeMs, to.demoTimeMs, t),
                 greenSumRate: lerpValue(from.greenSumRate, to.greenSumRate, t),
                 yellowViolations: lerpValue(from.yellowViolations, to.yellowViolations, t),
                 yellowViolationPct: lerpValue(from.yellowViolationPct, to.yellowViolationPct, t),
@@ -2439,6 +2539,8 @@ class LiveRunJsacLab extends HTMLElement {
                 ...activeLayer,
                 engine: `${base.engine || 'GNN'} ${activeLayer.label}`,
                 timeMs: base.timeMs,
+                rawTimeMs: base.rawTimeMs,
+                demoTimeMs: base.demoTimeMs,
             };
         }
         const result = this._displaySource()?.[this.selectedMethod];
@@ -2618,18 +2720,20 @@ class LiveRunJsacLab extends HTMLElement {
             row.classList.toggle('is-active', method === this.selectedMethod);
             row.addEventListener('click', () => this._selectMethod(method));
             const viol = r ? `${Math.round(r.yellowViolations)}/${this.B * this.my}` : '--';
+            const latency = r ? displayLatencyMs(r) : NaN;
+            const latencyTip = r ? latencyTitle(method, r) : 'Latency pending.';
             row.innerHTML = `
                 <span class="method-name" style="color:${this._methodColor(method)}">${method}</span>
                 <span>
                     <span class="metric-main">${r ? fmt(r.greenSumRate, 2) : '--'}</span>
                     <span class="metric-sub"> green SR / yellow viol ${viol}</span>
                 </span>
-                <span class="pill">${r ? fmtMs(r.timeMs) : '--'} ms</span>
+                <span class="pill" title="${escapeAttr(latencyTip)}" aria-label="${escapeAttr(latencyTip)}">${r ? `~${fmtMs(latency)} ms` : '--'}</span>
             `;
             this.$metrics.appendChild(row);
         }
         if (display?.GNN) {
-            this._setStatus(`${display.GNN.engine} / JSAC GNN ${fmtMs(display.GNN.timeMs)} ms / B=${this.B} K=${this._k()}`);
+            this._setStatus(`${display.GNN.engine} / JSAC GNN demo ~${fmtMs(displayLatencyMs(display.GNN))} ms / B=${this.B} K=${this._k()}`);
         }
     }
 

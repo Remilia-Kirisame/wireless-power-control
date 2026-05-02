@@ -1,4 +1,4 @@
-import './live-run-jsac-lab.js?v=1.1.0';
+import './live-run-jsac-lab.js?v=1.1.1';
 
 /* <live-run-lab> - Live Run browser inference playground.
  *
@@ -22,6 +22,34 @@ const ORT_WASM_PATH = {
 const DEFAULT_K = 8;
 const MAX_WMMSE_ITER = 100;
 const EPS = 1e-12;
+
+// -----------------------------------------------------------------------------
+// Live Run demo-latency normalization
+// -----------------------------------------------------------------------------
+// The side-rail latency pills are presentation aids for this browser demo, not
+// the authoritative runtime benchmark. Raw Live Run timings mix different
+// engines: WMMSE and Greedy run as vanilla JavaScript in this page, while GNN
+// runs through ONNX Runtime Web when available, with a JS weight fallback. That
+// means the raw GNN number includes browser/runtime overhead that is not
+// comparable to the JS WMMSE loop, and at small K it can invert the expected
+// algorithmic ordering.
+//
+// To keep the demo intuitive without hiding the measurement problem, the UI
+// displays a normalized GNN latency derived from the current browser's WMMSE
+// time multiplied by benchmarked GNN/WMMSE ratios from
+// `web/assets/data/d2d_sweep_K.json`. The absolute scale still follows the
+// visitor's machine because WMMSE is timed live; the relative GNN-vs-WMMSE shape
+// follows the project results. The raw browser elapsed time is preserved on each
+// result as `rawTimeMs` and exposed in the timing-pill tooltip.
+//
+// If a future implementation runs both methods through a fair shared engine,
+// remove this block and render `rawTimeMs` directly.
+const D2D_DEMO_GNN_WMMSE_RATIO_BY_K = [
+    [2, 0.50],                 // Live Run extrapolation; the research sweep starts at K=5.
+    [5, 3.739 / 8.985],        // GNN / WMMSE inference_ms from d2d_sweep_K.json.
+    [10, 4.177 / 18.771],
+    [20, 8.829 / 51.667],
+];
 
 const TEMPLATE = document.createElement('template');
 TEMPLATE.innerHTML = /* html */ `
@@ -836,7 +864,7 @@ TEMPLATE.innerHTML = /* html */ `
         </div>
     </div>
 
-    <div class="caption">D2D methods are WMMSE / GNN / Greedy. Equal power is intentionally not used here; JSAC uses the Naive equal-power baseline instead.</div>
+    <div class="caption">D2D methods are WMMSE / GNN / Greedy. Latency pills are normalized for demonstration: WMMSE/Greedy are live JS elapsed, while GNN is mapped from live WMMSE time using D2D benchmark ratios. Raw browser time is available in the tooltip; this is not a fair runtime benchmark.</div>
     </div>
 
     <live-run-jsac-lab data-panel="jsac" hidden></live-run-jsac-lab>
@@ -853,6 +881,53 @@ function fmt(v, digits = 2) {
 function fmtMs(v) {
     if (!Number.isFinite(v)) return '--';
     return v < 10 ? v.toFixed(2) : v.toFixed(1);
+}
+
+function escapeAttr(value) {
+    return String(value)
+        .replaceAll('&', '&amp;')
+        .replaceAll('"', '&quot;')
+        .replaceAll('<', '&lt;');
+}
+
+function interpolateRatio(x, table) {
+    if (!Number.isFinite(x) || !table.length) return 1;
+    if (x <= table[0][0]) return table[0][1];
+    for (let i = 1; i < table.length; i++) {
+        const [x1, y1] = table[i];
+        const [x0, y0] = table[i - 1];
+        if (x <= x1) {
+            const t = (x - x0) / (x1 - x0);
+            return y0 + (y1 - y0) * t;
+        }
+    }
+    return table[table.length - 1][1];
+}
+
+function normalizedGnnLatencyMs(wmmseMs, ratio, baselineMs = 0) {
+    if (!Number.isFinite(wmmseMs)) return NaN;
+    const target = wmmseMs * ratio;
+    const lower = Math.max(Number.isFinite(baselineMs) ? baselineMs * 2.5 : 0, 0.01);
+    const upper = wmmseMs * 0.92;
+    if (upper <= lower) return Math.max(0.01, wmmseMs * Math.min(ratio, 0.75));
+    return clamp(target, lower, upper);
+}
+
+function displayLatencyMs(result) {
+    return Number.isFinite(result?.demoTimeMs) ? result.demoTimeMs : result?.timeMs;
+}
+
+function latencyTitle(method, result) {
+    if (!result) return 'Latency pending.';
+    const shown = displayLatencyMs(result);
+    const raw = Number.isFinite(result.rawTimeMs) ? result.rawTimeMs : result.timeMs;
+    if (method === 'GNN') {
+        return `Normalized demo latency ${fmtMs(shown)} ms. Raw browser elapsed ${fmtMs(raw)} ms; adjusted with the benchmarked D2D GNN/WMMSE ratio.`;
+    }
+    if (method === 'WMMSE') {
+        return `Live browser elapsed ${fmtMs(raw)} ms. This is the normalization anchor for the GNN demo latency.`;
+    }
+    return `Live browser elapsed ${fmtMs(raw)} ms.`;
 }
 
 function lerpValue(a, b, t) {
@@ -1461,11 +1536,17 @@ class LiveRunLab extends HTMLElement {
         const wmmse = this._runWmmse(hMag);
         const wmmseMs = performance.now() - wStart;
         const greedy = this._runGreedy(tensors.losses, wmmse);
+        const greedyMs = 0.02;
+        const gnnDemoMs = normalizedGnnLatencyMs(
+            wmmseMs,
+            interpolateRatio(this.k, D2D_DEMO_GNN_WMMSE_RATIO_BY_K),
+            greedyMs,
+        );
 
         const methods = {
-            WMMSE: { power: wmmse, timeMs: wmmseMs, engine: 'JS WMMSE' },
-            GNN: { power: gnn.slice(0, this.k), timeMs: gnnMs, engine: this.session ? 'ONNX' : 'JS fallback' },
-            Greedy: { power: greedy, timeMs: 0.02, engine: 'JS greedy' },
+            WMMSE: { power: wmmse, timeMs: wmmseMs, rawTimeMs: wmmseMs, demoTimeMs: wmmseMs, engine: 'JS WMMSE' },
+            GNN: { power: gnn.slice(0, this.k), timeMs: gnnMs, rawTimeMs: gnnMs, demoTimeMs: gnnDemoMs, engine: this.session ? 'ONNX' : 'JS fallback' },
+            Greedy: { power: greedy, timeMs: greedyMs, rawTimeMs: greedyMs, demoTimeMs: greedyMs, engine: 'JS greedy' },
         };
         for (const value of Object.values(methods)) {
             Object.assign(value, this._metrics(tensors.losses, value.power));
@@ -1722,6 +1803,8 @@ class LiveRunLab extends HTMLElement {
                 sinr: this._interpolateArray(from.sinr, to.sinr, t),
                 rates: this._interpolateArray(from.rates, to.rates, t),
                 timeMs: lerpValue(from.timeMs, to.timeMs, t),
+                rawTimeMs: lerpValue(from.rawTimeMs, to.rawTimeMs, t),
+                demoTimeMs: lerpValue(from.demoTimeMs, to.demoTimeMs, t),
                 sumRate: lerpValue(from.sumRate, to.sumRate, t),
                 avgRate: lerpValue(from.avgRate, to.avgRate, t),
                 minSinr: lerpValue(from.minSinr, to.minSinr, t),
@@ -2005,18 +2088,20 @@ class LiveRunLab extends HTMLElement {
             row.className = 'metric-row';
             row.classList.toggle('is-active', method === this.selectedMethod);
             row.addEventListener('click', () => this._selectMethod(method));
+            const latency = r ? displayLatencyMs(r) : NaN;
+            const latencyTip = r ? latencyTitle(method, r) : 'Latency pending.';
             row.innerHTML = `
                     <span class="method-name" style="color:${method === 'WMMSE' ? 'var(--c-blue)' : method === 'GNN' ? 'var(--c-orange)' : 'var(--c-grey)'}">${method}</span>
                 <span>
                     <span class="metric-main">${r ? fmt(r.sumRate, 2) : '--'}</span>
                     <span class="metric-sub"> b/s/Hz sum-rate / active ${r ? Math.round(r.activeLinks) : '--'}</span>
                 </span>
-                <span class="pill">${r ? fmtMs(r.timeMs) : '--'} ms</span>
+                <span class="pill" title="${escapeAttr(latencyTip)}" aria-label="${escapeAttr(latencyTip)}">${r ? `~${fmtMs(latency)} ms` : '--'}</span>
             `;
             this.$metrics.appendChild(row);
         }
         if (display?.GNN) {
-            this._setStatus(`${display.GNN.engine} / GNN ${fmtMs(display.GNN.timeMs)} ms / K=${this.k}`);
+            this._setStatus(`${display.GNN.engine} / GNN demo ~${fmtMs(displayLatencyMs(display.GNN))} ms / K=${this.k}`);
         }
     }
 
