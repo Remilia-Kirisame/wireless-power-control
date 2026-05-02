@@ -140,6 +140,93 @@ JSAC_TEMPLATE.innerHTML = /* html */ `
             letter-spacing: 0.08em;
             text-transform: uppercase;
         }
+        .field-legend {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            z-index: 2;
+            display: grid;
+            gap: 6px;
+            max-width: min(214px, calc(100% - 24px));
+            padding: 10px 11px;
+            border: 1px solid rgba(255,255,255,0.14);
+            border-radius: 6px;
+            background: rgba(7, 10, 14, 0.78);
+            box-shadow: 0 14px 34px rgba(0,0,0,0.28);
+            color: var(--text-dim);
+            font-family: var(--font-mono);
+            font-size: 10px;
+            letter-spacing: 0.04em;
+            pointer-events: none;
+        }
+        .field-legend-title {
+            color: var(--text-mute);
+            font-size: 9px;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+        }
+        .legend-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            white-space: nowrap;
+        }
+        .legend-mark {
+            flex: 0 0 auto;
+            width: 22px;
+            height: 12px;
+            position: relative;
+        }
+        .legend-mark.blue::before {
+            content: "";
+            position: absolute;
+            left: 5px;
+            top: 1px;
+            width: 11px;
+            height: 11px;
+            border-radius: 2px;
+            background: var(--c-blue);
+        }
+        .legend-mark.yellow::before,
+        .legend-mark.green::before {
+            content: "";
+            position: absolute;
+            left: 6px;
+            top: 2px;
+            width: 9px;
+            height: 9px;
+            border-radius: 50%;
+            background: var(--c-yellow);
+        }
+        .legend-mark.green::before {
+            background: var(--c-green);
+        }
+        .legend-mark.link::before,
+        .legend-mark.interference::before {
+            content: "";
+            position: absolute;
+            left: 0;
+            right: 0;
+            top: 5px;
+            height: 2px;
+        }
+        .legend-mark.link::before {
+            background: linear-gradient(90deg, var(--c-yellow), var(--c-green));
+        }
+        .legend-mark.interference::before {
+            height: 0;
+            border-top: 2px dashed rgba(160,170,180,0.78);
+        }
+        .legend-mark.alert::before {
+            content: "";
+            position: absolute;
+            left: 5px;
+            top: 0;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            border: 2px solid rgba(255,99,99,0.95);
+        }
         .side-card {
             padding: 16px;
             display: flex;
@@ -404,6 +491,15 @@ JSAC_TEMPLATE.innerHTML = /* html */ `
     <div class="stage">
         <div class="field-card">
             <svg data-field viewBox="0 0 225 225" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Draggable JSAC layout"></svg>
+            <div class="field-legend" aria-label="JSAC map legend">
+                <div class="field-legend-title">Map legend</div>
+                <div class="legend-row"><span class="legend-mark blue"></span><span>Blue car</span></div>
+                <div class="legend-row"><span class="legend-mark yellow"></span><span>Yellow sensing Rx</span></div>
+                <div class="legend-row"><span class="legend-mark green"></span><span>Green comm Rx</span></div>
+                <div class="legend-row"><span class="legend-mark link"></span><span>Service link</span></div>
+                <div class="legend-row"><span class="legend-mark interference"></span><span>Interference</span></div>
+                <div class="legend-row"><span class="legend-mark alert"></span><span>SINR alert</span></div>
+            </div>
             <span class="field-hint">drag Blue/Rx</span>
         </div>
         <aside class="side-card">

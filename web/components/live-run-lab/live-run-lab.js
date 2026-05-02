@@ -1,4 +1,4 @@
-import './live-run-jsac-lab.js?v=1.2.4';
+import './live-run-jsac-lab.js';
 
 /* <live-run-lab> - Live Run browser inference playground.
  *
@@ -171,6 +171,86 @@ TEMPLATE.innerHTML = /* html */ `
             font-size: 10px;
             letter-spacing: 0.08em;
             text-transform: uppercase;
+        }
+        .field-legend {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            z-index: 2;
+            display: grid;
+            gap: 6px;
+            max-width: min(210px, calc(100% - 24px));
+            padding: 10px 11px;
+            border: 1px solid rgba(255,255,255,0.14);
+            border-radius: 6px;
+            background: rgba(7, 10, 14, 0.78);
+            box-shadow: 0 14px 34px rgba(0,0,0,0.28);
+            color: var(--text-dim);
+            font-family: var(--font-mono);
+            font-size: 10px;
+            letter-spacing: 0.04em;
+            pointer-events: none;
+        }
+        .field-legend-title {
+            color: var(--text-mute);
+            font-size: 9px;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+        }
+        .legend-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            white-space: nowrap;
+        }
+        .legend-mark {
+            flex: 0 0 auto;
+            width: 22px;
+            height: 12px;
+            position: relative;
+        }
+        .legend-mark.tx::before {
+            content: "";
+            position: absolute;
+            left: 5px;
+            top: 1px;
+            width: 11px;
+            height: 11px;
+            border-radius: 3px;
+            background: var(--c-blue);
+        }
+        .legend-mark.rx::before {
+            content: "";
+            position: absolute;
+            left: 6px;
+            top: 1px;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--text);
+            opacity: 0.86;
+        }
+        .legend-mark.link::before,
+        .legend-mark.interference::before {
+            content: "";
+            position: absolute;
+            left: 0;
+            right: 0;
+            top: 5px;
+            border-top: 2px solid rgba(255,106,61,0.82);
+        }
+        .legend-mark.interference::before {
+            border-top: 2px dashed rgba(77,163,255,0.74);
+        }
+        .legend-mark.halo::before {
+            content: "";
+            position: absolute;
+            left: 4px;
+            top: -1px;
+            width: 13px;
+            height: 13px;
+            border-radius: 50%;
+            border: 3px solid rgba(255,106,61,0.5);
         }
         .status {
             font-family: var(--font-mono);
@@ -448,6 +528,14 @@ TEMPLATE.innerHTML = /* html */ `
     <div class="stage">
         <div class="field-card">
             <svg data-field viewBox="0 0 1000 1000" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Draggable D2D layout"></svg>
+            <div class="field-legend" aria-label="D2D map legend">
+                <div class="field-legend-title">Map legend</div>
+                <div class="legend-row"><span class="legend-mark tx"></span><span>Transmitter</span></div>
+                <div class="legend-row"><span class="legend-mark rx"></span><span>Receiver</span></div>
+                <div class="legend-row"><span class="legend-mark link"></span><span>Direct link</span></div>
+                <div class="legend-row"><span class="legend-mark interference"></span><span>Interference</span></div>
+                <div class="legend-row"><span class="legend-mark halo"></span><span>Allocated power</span></div>
+            </div>
             <span class="field-hint">drag Tx/Rx</span>
         </div>
         <aside class="side-card">
@@ -812,10 +900,10 @@ class LiveRunLab extends HTMLElement {
         });
         if (this.mode === 'jsac') {
             this.$title.textContent = 'Draw Blue-car JSAC clusters and compare WMMSE, GNN, and Naive.';
-            this.$sub.textContent = 'Drag Blue transmitters or Yellow/Green receivers. The browser rebuilds same-channel interference, runs the exported JSAC GNN, applies per-Blue softmax, and tracks Green rate plus Yellow SINR constraints.';
+            this.$sub.textContent = 'Drag Blue transmitters or Yellow/Green receivers to rebuilds the graph.';
         } else {
             this.$title.textContent = 'Draw the D2D interference channel and compare WMMSE, GNN, and Greedy.';
-            this.$sub.textContent = 'Drag any transmitter or receiver. The browser rebuilds the graph, runs the exported D2D GNN, runs live WMMSE, and recomputes SINR plus sum-rate for the current geometry.';
+            this.$sub.textContent = 'Drag any transmitter or receiver to rebuilds the graph.';
         }
     }
 
