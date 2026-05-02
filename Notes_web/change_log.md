@@ -7,3 +7,5 @@ future changes logged below.
 - **v1.0.2** — Live Run map legends. 
   D2D and JSAC maps now label the scenario-specific nodes, links, interference traces, and constraint/power cues in the top-right corner of the map.
 - **v1.0.3** — Live Run grouped controls and safer presets.
+- **v1.1.0** — Live Run cockpit refinement.
+  compact intro, map-aligned rail, animated JSAC selected-group allocation, click-empty focus exit, D2D/JSAC heatmap linking, compact JSAC power glows, and compact solver drawer.

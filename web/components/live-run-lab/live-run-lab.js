@@ -1,4 +1,4 @@
-import './live-run-jsac-lab.js?v=1.0.3';
+import './live-run-jsac-lab.js?v=1.1.0';
 
 /* <live-run-lab> - Live Run browser inference playground.
  *
@@ -224,14 +224,14 @@ TEMPLATE.innerHTML = /* html */ `
         }
         .stage {
             display: grid;
-            grid-template-columns: minmax(0, 1.3fr) minmax(320px, 0.7fr);
+            grid-template-columns: minmax(0, 1fr) minmax(340px, 0.34fr);
             gap: 18px;
             align-items: stretch;
         }
         @media (max-width: 980px) {
             .stage { grid-template-columns: 1fr; }
         }
-        .field-card, .side-card, .strip {
+        .field-card, .side-card, .strip, .diagnostic-drawer {
             border: 1px solid var(--rule);
             border-radius: 8px;
             background: rgba(0,0,0,0.18);
@@ -239,12 +239,11 @@ TEMPLATE.innerHTML = /* html */ `
         }
         .field-card {
             position: relative;
-            min-height: 520px;
+            height: clamp(480px, 64vh, 680px);
         }
         svg[data-field] {
             width: 100%;
             height: 100%;
-            min-height: 520px;
             display: block;
             touch-action: none;
         }
@@ -366,6 +365,14 @@ TEMPLATE.innerHTML = /* html */ `
             display: flex;
             flex-direction: column;
             gap: 14px;
+            height: clamp(480px, 64vh, 680px);
+            overflow: auto;
+            scrollbar-color: rgba(255,255,255,0.22) transparent;
+        }
+        .side-card::-webkit-scrollbar { width: 6px; }
+        .side-card::-webkit-scrollbar-thumb {
+            background: rgba(255,255,255,0.18);
+            border-radius: 99px;
         }
         .metric-list {
             display: grid;
@@ -385,6 +392,9 @@ TEMPLATE.innerHTML = /* html */ `
         .metric-row.is-active {
             border-color: rgba(255, 106, 61, 0.72);
             background: rgba(255, 106, 61, 0.08);
+        }
+        .metric-row:hover {
+            border-color: rgba(255, 106, 61, 0.45);
         }
         .method-name {
             font-family: var(--font-mono);
@@ -487,20 +497,59 @@ TEMPLATE.innerHTML = /* html */ `
             background: rgba(255,106,61,0.78);
             transition: width var(--dur-mid) var(--ease);
         }
-        .diagnostics {
-            display: grid;
-            grid-template-columns: 1fr 220px;
-            gap: 18px;
+        .diagnostic-drawer {
             margin-top: 18px;
-        }
-        @media (max-width: 760px) {
-            .diagnostics { grid-template-columns: 1fr; }
         }
         .strip {
             padding: 14px;
         }
-        .history-strip {
-            grid-column: 1 / -1;
+        .drawer-head {
+            display: grid;
+            grid-template-columns: auto minmax(0, 1fr) auto;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 12px;
+            border-bottom: 1px solid var(--rule-soft);
+            background: rgba(255,255,255,0.018);
+        }
+        .drawer-head .panel-label {
+            margin: 0;
+            white-space: nowrap;
+        }
+        .drawer-tabs {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-wrap: wrap;
+            min-width: 0;
+        }
+        .drawer-tabs button,
+        .drawer-toggle {
+            min-height: 30px;
+            padding: 6px 9px;
+            font-family: var(--font-mono);
+            font-size: 10px;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+        .drawer-body {
+            padding: 14px;
+        }
+        .drawer-panel {
+            display: none;
+        }
+        .drawer-panel.is-active {
+            display: block;
+        }
+        .diagnostic-drawer.is-collapsed .drawer-body {
+            display: none;
+        }
+        .diagnostic-drawer.is-collapsed .drawer-head {
+            border-bottom: 0;
+        }
+        @media (max-width: 760px) {
+            .drawer-head { grid-template-columns: 1fr; }
+            .drawer-toggle { width: fit-content; }
         }
         .history {
             display: grid;
@@ -528,6 +577,60 @@ TEMPLATE.innerHTML = /* html */ `
         .history-row.is-active .history-bar {
             opacity: 0.92;
         }
+        .mini-history {
+            display: grid;
+            gap: 7px;
+        }
+        .mini-history-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+        }
+        .mini-history-bars {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 5px;
+        }
+        .mini-history-bar {
+            height: 24px;
+            display: flex;
+            align-items: end;
+            border: 1px solid var(--rule-soft);
+            border-radius: 6px;
+            padding: 3px;
+            background: rgba(255,255,255,0.025);
+        }
+        .mini-history-bar span {
+            display: block;
+            width: 100%;
+            min-height: 2px;
+            border-radius: 4px 4px 2px 2px;
+            background: var(--mini-color, var(--c-orange));
+            transition: height var(--dur-mid) var(--ease);
+        }
+        .trace-spark {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            gap: 12px;
+            align-items: center;
+        }
+        .spark-svg {
+            width: 100%;
+            height: 92px;
+            border: 1px solid var(--rule-soft);
+            border-radius: 7px;
+            background: rgba(255,255,255,0.025);
+        }
+        .trace-stats {
+            display: grid;
+            gap: 7px;
+            min-width: 116px;
+            font-family: var(--font-mono);
+            font-size: 10px;
+            color: var(--text-dim);
+            font-variant-numeric: tabular-nums;
+        }
         .message-edge {
             animation: messagePulse 1.6s linear infinite;
             animation-delay: var(--edge-delay, 0s);
@@ -537,12 +640,37 @@ TEMPLATE.innerHTML = /* html */ `
             45% { opacity: 0.62; }
             100% { stroke-dashoffset: -26; opacity: 0.18; }
         }
+        .heat-focus-line {
+            animation: focusPulse 1.1s ease-in-out infinite;
+        }
+        @keyframes focusPulse {
+            0%, 100% { opacity: 0.48; }
+            50% { opacity: 0.95; }
+        }
         .heat svg {
             width: 100%;
+            max-height: 360px;
             aspect-ratio: 1;
             border: 1px solid var(--rule-soft);
             border-radius: 6px;
             background: rgba(0,0,0,0.22);
+        }
+        .heat-grid {
+            display: grid;
+            grid-template-columns: minmax(220px, 360px) minmax(0, 1fr);
+            gap: 14px;
+            align-items: start;
+        }
+        @media (max-width: 760px) {
+            .heat-grid { grid-template-columns: 1fr; }
+        }
+        .heat-cell {
+            cursor: crosshair;
+            transition: opacity var(--dur-fast) var(--ease), stroke var(--dur-fast) var(--ease);
+        }
+        .heat-cell:hover {
+            stroke: rgba(255,255,255,0.76);
+            stroke-width: 1;
         }
         .caption {
             margin-top: 12px;
@@ -651,6 +779,10 @@ TEMPLATE.innerHTML = /* html */ `
                 <div class="method-tabs" data-method-tabs></div>
             </div>
             <div>
+                <div class="panel-label">Power allocation</div>
+                <div class="bars" data-bars></div>
+            </div>
+            <div>
                 <div class="panel-label">Live metrics</div>
                 <div class="metric-list" data-metrics></div>
             </div>
@@ -658,34 +790,49 @@ TEMPLATE.innerHTML = /* html */ `
                 <div class="panel-label">Selected link</div>
                 <div class="metric-sub" data-selected>Click a node or drag a link endpoint.</div>
             </div>
+            <div>
+                <div class="panel-label">Comparison pulse</div>
+                <div class="mini-history" data-mini-history></div>
+            </div>
         </aside>
     </div>
 
-    <div class="diagnostics">
-        <div class="strip">
-            <div class="panel-label">Power allocation - selected method</div>
-            <div class="bars" data-bars></div>
-            <div class="layer-trace">
+    <div class="diagnostic-drawer" data-drawer>
+        <div class="drawer-head">
+            <div class="panel-label">Diagnostics</div>
+            <div class="drawer-tabs" aria-label="Diagnostic views">
+                <button type="button" data-diagnostic-tab="history">History</button>
+                <button type="button" data-diagnostic-tab="heat">Heatmap</button>
+                <button type="button" data-diagnostic-tab="solver">Solver</button>
+            </div>
+            <button type="button" class="drawer-toggle" data-drawer-toggle>Collapse</button>
+        </div>
+        <div class="drawer-body">
+            <section class="drawer-panel" data-diagnostic-panel="history">
                 <div class="panel-label">Comparison history</div>
                 <div class="history" data-history></div>
-            </div>
-        </div>
-        <div class="strip heat">
-            <div class="panel-label">Channel matrix |h|^2</div>
-            <svg data-heat viewBox="0 0 220 220" preserveAspectRatio="xMidYMid meet" aria-label="Channel matrix heatmap"></svg>
-        </div>
-        <div class="strip history-strip">
-            <div class="panel-label">Solver traces</div>
-            <div class="trace-stack">
-                <div class="trace-section">
-                    <div class="panel-label">GNN layer trace</div>
-                    <div data-layers></div>
+            </section>
+            <section class="drawer-panel heat" data-diagnostic-panel="heat">
+                <div class="heat-grid">
+                    <div>
+                        <div class="panel-label">Channel matrix |h|^2</div>
+                        <svg data-heat viewBox="0 0 220 220" preserveAspectRatio="xMidYMid meet" aria-label="Channel matrix heatmap"></svg>
+                    </div>
+                    <div class="metric-sub">Darker direct cells carry stronger intended links; blue off-diagonal cells are interference paths.</div>
                 </div>
-                <div class="trace-section">
-                    <div class="panel-label">WMMSE iteration overlay</div>
-                    <div data-wmmse-trace></div>
+            </section>
+            <section class="drawer-panel" data-diagnostic-panel="solver">
+                <div class="trace-stack">
+                    <div class="trace-section">
+                        <div class="panel-label">GNN layer summary</div>
+                        <div data-layers></div>
+                    </div>
+                    <div class="trace-section">
+                        <div class="panel-label">WMMSE convergence</div>
+                        <div data-wmmse-trace></div>
+                    </div>
                 </div>
-            </div>
+            </section>
         </div>
     </div>
 
@@ -817,6 +964,9 @@ class LiveRunLab extends HTMLElement {
         this.lastControlActivation = 0;
         this.methodAnimationFrame = 0;
         this.visualPower = null;
+        this.activeDiagnostic = 'history';
+        this.drawerCollapsed = false;
+        this.hoverEdge = null;
 
         this.$field = this.shadowRoot.querySelector('[data-field]');
         this.$heat = this.shadowRoot.querySelector('[data-heat]');
@@ -832,6 +982,9 @@ class LiveRunLab extends HTMLElement {
         this.$selected = this.shadowRoot.querySelector('[data-selected]');
         this.$methodTabs = this.shadowRoot.querySelector('[data-method-tabs]');
         this.$freeze = this.shadowRoot.querySelector('[data-freeze]');
+        this.$miniHistory = this.shadowRoot.querySelector('[data-mini-history]');
+        this.$drawer = this.shadowRoot.querySelector('[data-drawer]');
+        this.$drawerToggle = this.shadowRoot.querySelector('[data-drawer-toggle]');
         this.$title = this.shadowRoot.querySelector('[data-title]');
         this.$sub = this.shadowRoot.querySelector('[data-sub]');
     }
@@ -890,8 +1043,13 @@ class LiveRunLab extends HTMLElement {
         this.shadowRoot.querySelectorAll('[data-preset]').forEach((btn) => {
             this._bindActionButton(btn, () => this._applyPreset(btn.dataset.preset));
         });
+        this.shadowRoot.querySelectorAll('[data-diagnostic-tab]').forEach((btn) => {
+            btn.addEventListener('click', () => this._setDiagnostic(btn.dataset.diagnosticTab));
+        });
+        this._bindActionButton(this.$drawerToggle, () => this._toggleDrawer());
 
         this._renderMethodTabs();
+        this._syncDiagnosticShell();
         this._setMode(this.mode);
         this._loadSavedLayouts();
     }
@@ -1033,6 +1191,31 @@ class LiveRunLab extends HTMLElement {
         this.selectedMethod = method;
         this._renderMethodTabs();
         this._startMethodTransition(previous, method);
+    }
+
+    _setDiagnostic(name) {
+        if (!['history', 'heat', 'solver'].includes(name)) return;
+        this.activeDiagnostic = name;
+        this.drawerCollapsed = false;
+        this._syncDiagnosticShell();
+    }
+
+    _toggleDrawer() {
+        this.drawerCollapsed = !this.drawerCollapsed;
+        this._syncDiagnosticShell();
+    }
+
+    _syncDiagnosticShell() {
+        this.shadowRoot.querySelectorAll('[data-diagnostic-tab]').forEach((btn) => {
+            const active = btn.dataset.diagnosticTab === this.activeDiagnostic;
+            btn.classList.toggle('is-active', active);
+            btn.setAttribute('aria-pressed', active ? 'true' : 'false');
+        });
+        this.shadowRoot.querySelectorAll('[data-diagnostic-panel]').forEach((panel) => {
+            panel.classList.toggle('is-active', panel.dataset.diagnosticPanel === this.activeDiagnostic);
+        });
+        this.$drawer?.classList.toggle('is-collapsed', this.drawerCollapsed);
+        if (this.$drawerToggle) this.$drawerToggle.textContent = this.drawerCollapsed ? 'Expand' : 'Collapse';
     }
 
     async _load() {
@@ -1263,6 +1446,7 @@ class LiveRunLab extends HTMLElement {
 
     async _computeAll() {
         if (!this.manifest || !this.weights) return;
+        this.hoverEdge = null;
         const ticket = ++this.computeTicket;
         const tensors = this._buildInputs();
         const hMag = tensors.losses.map((row) => row.map((v) => Math.sqrt(v)));
@@ -1637,7 +1821,16 @@ class LiveRunLab extends HTMLElement {
             if (!node) return;
             const kind = node.dataset.kind;
             const index = Number(node.dataset.index);
-            this.drag = { kind, index };
+            const point = this._fieldPointFromEvent(ev);
+            const arr = kind === 'tx' ? this.tx : this.rx;
+            const current = arr[index];
+            this.drag = {
+                kind,
+                index,
+                el: node,
+                offsetX: current.x - point.x,
+                offsetY: current.y - point.y,
+            };
             this.selected = { kind, index };
             node.setPointerCapture(ev.pointerId);
             node.classList.add('is-dragging');
@@ -1648,18 +1841,30 @@ class LiveRunLab extends HTMLElement {
             this._moveFromEvent(ev);
         });
         this.$field.addEventListener('pointerup', (ev) => {
-            const node = ev.target.closest?.('.node');
-            node?.classList.remove('is-dragging');
+            this.drag?.el?.classList.remove('is-dragging');
             this.drag = null;
             this._scheduleCompute(0);
         });
+        this.$field.addEventListener('pointercancel', () => {
+            this.drag?.el?.classList.remove('is-dragging');
+            this.drag = null;
+        });
+    }
+
+    _fieldPointFromEvent(ev) {
+        const rect = this.$field.getBoundingClientRect();
+        const field = this._fieldLength();
+        return {
+            x: (ev.clientX - rect.left) / rect.width * field,
+            y: (ev.clientY - rect.top) / rect.height * field,
+        };
     }
 
     _moveFromEvent(ev) {
-        const rect = this.$field.getBoundingClientRect();
         const field = this._fieldLength();
-        const x = clamp((ev.clientX - rect.left) / rect.width * field, 0, field);
-        const y = clamp((ev.clientY - rect.top) / rect.height * field, 0, field);
+        const point = this._fieldPointFromEvent(ev);
+        const x = clamp(point.x + (this.drag.offsetX || 0), 0, field);
+        const y = clamp(point.y + (this.drag.offsetY || 0), 0, field);
         const arr = this.drag.kind === 'tx' ? this.tx : this.rx;
         arr[this.drag.index] = { x, y };
         this._draw();
@@ -1670,10 +1875,12 @@ class LiveRunLab extends HTMLElement {
         this._drawField();
         this._drawMetrics();
         this._drawBars();
+        this._drawMiniHistory();
         this._drawLayerTrace();
         this._drawHistory();
         this._drawWmmseTrace();
         this._drawHeatmap();
+        this._syncDiagnosticShell();
     }
 
     _selectedPower() {
@@ -1718,6 +1925,29 @@ class LiveRunLab extends HTMLElement {
                     style: `--edge-delay:${(n % 8) * 0.08}s`,
                 }));
             });
+        }
+
+        if (this.hoverEdge && this.tx[this.hoverEdge.source] && this.rx[this.hoverEdge.target]) {
+            const tx = this.tx[this.hoverEdge.source];
+            const rx = this.rx[this.hoverEdge.target];
+            svg.appendChild(svgEl('line', {
+                class: 'heat-focus-line',
+                x1: tx.x,
+                y1: tx.y,
+                x2: rx.x,
+                y2: rx.y,
+                stroke: 'rgba(255,255,255,0.92)',
+                'stroke-width': 2.6,
+                'stroke-dasharray': '7 5',
+            }));
+            svg.appendChild(svgEl('circle', {
+                cx: rx.x,
+                cy: rx.y,
+                r: 14,
+                fill: 'none',
+                stroke: 'rgba(255,255,255,0.75)',
+                'stroke-width': 2,
+            }));
         }
 
         for (let i = 0; i < this.k; i++) {
@@ -1860,6 +2090,33 @@ class LiveRunLab extends HTMLElement {
         }
     }
 
+    _drawMiniHistory() {
+        if (!this.$miniHistory) return;
+        this.$miniHistory.innerHTML = '';
+        const latest = this.history[this.history.length - 1];
+        if (!latest) {
+            this.$miniHistory.innerHTML = '<div class="metric-sub">Waiting for first solve.</div>';
+            return;
+        }
+        const methods = ['WMMSE', 'GNN', 'Greedy'];
+        const max = Math.max(...methods.map((method) => latest[method] || 0), 1);
+        const delta = latest.WMMSE > 0 ? (latest.GNN / latest.WMMSE - 1) * 100 : 0;
+        const deltaText = `${delta >= 0 ? '+' : ''}${fmt(delta, 1)}%`;
+        const head = document.createElement('div');
+        head.className = 'mini-history-head';
+        head.innerHTML = `<span class="metric-sub">GNN vs WMMSE</span><span class="pill">${deltaText}</span>`;
+        const bars = document.createElement('div');
+        bars.className = 'mini-history-bars';
+        for (const method of methods) {
+            const wrap = document.createElement('div');
+            wrap.className = 'mini-history-bar';
+            wrap.title = `${method} ${fmt(latest[method], 2)}`;
+            wrap.innerHTML = `<span style="--mini-color:${this._methodColor(method)};height:${clamp((latest[method] || 0) / max, 0, 1) * 100}%"></span>`;
+            bars.appendChild(wrap);
+        }
+        this.$miniHistory.append(head, bars);
+    }
+
     _drawWmmseTrace() {
         this.$wmmseTrace.innerHTML = '';
         const trace = this.wmmseTrace || [];
@@ -1868,18 +2125,38 @@ class LiveRunLab extends HTMLElement {
             return;
         }
         const max = Math.max(...trace.map((entry) => entry.sumRate), 1);
-        for (const entry of trace) {
-            const width = clamp(entry.sumRate / max, 0, 1) * this.resultAnimationT * 100;
-            const row = document.createElement('div');
-            row.className = 'layer-row';
-            row.innerHTML = `
-                <span>I${entry.iter}</span>
-                <span class="layer-track"><span class="layer-fill" style="background:var(--c-blue);width:${width}%"></span></span>
-                <span>${fmt(entry.sumRate, 1)}</span>
-            `;
-            row.title = `active ${entry.active}`;
-            this.$wmmseTrace.appendChild(row);
-        }
+        const min = Math.min(...trace.map((entry) => entry.sumRate));
+        const width = 420;
+        const height = 92;
+        const pad = 12;
+        const progress = this.resultAnimationT;
+        const denom = Math.max(max - min, 1e-9);
+        const points = trace.map((entry, index) => {
+            const x = pad + (width - pad * 2) * (index / Math.max(1, trace.length - 1)) * progress;
+            const y = height - pad - (height - pad * 2) * ((entry.sumRate - min) / denom);
+            return `${fmt(x, 2)},${fmt(y, 2)}`;
+        }).join(' ');
+        const dots = trace.map((entry, index) => {
+            const reveal = index <= Math.floor((trace.length - 1) * progress);
+            if (!reveal) return '';
+            const x = pad + (width - pad * 2) * (index / Math.max(1, trace.length - 1));
+            const y = height - pad - (height - pad * 2) * ((entry.sumRate - min) / denom);
+            return `<circle cx="${fmt(x, 2)}" cy="${fmt(y, 2)}" r="3" fill="var(--c-blue)"><title>I${entry.iter} ${fmt(entry.sumRate, 2)} / active ${entry.active}</title></circle>`;
+        }).join('');
+        const last = trace[trace.length - 1];
+        this.$wmmseTrace.innerHTML = `
+            <div class="trace-spark">
+                <svg class="spark-svg" viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" role="img" aria-label="WMMSE convergence sparkline">
+                    <polyline points="${points}" fill="none" stroke="var(--c-blue)" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"></polyline>
+                    ${dots}
+                </svg>
+                <div class="trace-stats">
+                    <span>final ${fmt(last.sumRate, 2)}</span>
+                    <span>active ${Math.round(last.active)}</span>
+                    <span>${trace.length} checkpoints</span>
+                </div>
+            </div>
+        `;
     }
 
     _drawHeatmap() {
@@ -1900,13 +2177,27 @@ class LiveRunLab extends HTMLElement {
                 const color = i === j
                     ? `rgba(255,106,61,${0.25 + 0.65 * t})`
                     : `rgba(77,163,255,${0.08 + 0.55 * t})`;
-                svg.appendChild(svgEl('rect', {
+                const cell = svgEl('rect', {
+                    class: 'heat-cell',
                     x: j * size,
                     y: i * size,
                     width: Math.max(1, size - 1),
                     height: Math.max(1, size - 1),
                     fill: color,
-                }));
+                });
+                cell.addEventListener('pointerenter', () => {
+                    this.hoverEdge = { target: i, source: j };
+                    this._drawField();
+                });
+                cell.addEventListener('pointerleave', () => {
+                    this.hoverEdge = null;
+                    this._drawField();
+                });
+                cell.addEventListener('click', () => {
+                    this.selected = { kind: 'rx', index: i };
+                    this._draw();
+                });
+                svg.appendChild(cell);
             }
         }
     }

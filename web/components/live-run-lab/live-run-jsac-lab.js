@@ -197,14 +197,14 @@ JSAC_TEMPLATE.innerHTML = /* html */ `
         }
         .stage {
             display: grid;
-            grid-template-columns: minmax(0, 1.3fr) minmax(320px, 0.7fr);
+            grid-template-columns: minmax(0, 1fr) minmax(340px, 0.34fr);
             gap: 18px;
             align-items: stretch;
         }
         @media (max-width: 980px) {
             .stage { grid-template-columns: 1fr; }
         }
-        .field-card, .side-card, .strip {
+        .field-card, .side-card, .strip, .diagnostic-drawer {
             border: 1px solid var(--rule);
             border-radius: 8px;
             background: rgba(0,0,0,0.18);
@@ -212,12 +212,11 @@ JSAC_TEMPLATE.innerHTML = /* html */ `
         }
         .field-card {
             position: relative;
-            min-height: 520px;
+            height: clamp(480px, 64vh, 680px);
         }
         svg[data-field] {
             width: 100%;
             height: 100%;
-            min-height: 520px;
             display: block;
             touch-action: none;
         }
@@ -324,6 +323,14 @@ JSAC_TEMPLATE.innerHTML = /* html */ `
             display: flex;
             flex-direction: column;
             gap: 14px;
+            height: clamp(480px, 64vh, 680px);
+            overflow: auto;
+            scrollbar-color: rgba(255,255,255,0.22) transparent;
+        }
+        .side-card::-webkit-scrollbar { width: 6px; }
+        .side-card::-webkit-scrollbar-thumb {
+            background: rgba(255,255,255,0.18);
+            border-radius: 99px;
         }
         .panel-label {
             font-family: var(--font-mono);
@@ -352,6 +359,9 @@ JSAC_TEMPLATE.innerHTML = /* html */ `
             border-color: rgba(255, 106, 61, 0.72);
             background: rgba(255, 106, 61, 0.08);
         }
+        .metric-row:hover {
+            border-color: rgba(255, 106, 61, 0.45);
+        }
         .method-name {
             font-family: var(--font-mono);
             font-size: 11px;
@@ -379,20 +389,60 @@ JSAC_TEMPLATE.innerHTML = /* html */ `
             border-radius: var(--radius-chip);
             padding: 4px 8px;
         }
-        .diagnostics {
-            display: grid;
-            grid-template-columns: 1fr 220px;
-            gap: 18px;
-            margin-top: 18px;
-        }
-        @media (max-width: 760px) {
-            .diagnostics { grid-template-columns: 1fr; }
-        }
         .strip {
             padding: 14px;
         }
-        .history-strip {
-            grid-column: 1 / -1;
+        .diagnostic-drawer {
+            margin-top: 18px;
+        }
+        .drawer-head {
+            display: grid;
+            grid-template-columns: auto minmax(0, 1fr) auto;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 12px;
+            border-bottom: 1px solid var(--rule-soft);
+            background: rgba(255,255,255,0.018);
+        }
+        .drawer-head .panel-label {
+            margin: 0;
+            white-space: nowrap;
+        }
+        .drawer-tabs {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-wrap: wrap;
+            min-width: 0;
+        }
+        .drawer-tabs button,
+        .drawer-toggle,
+        .trace-action {
+            min-height: 30px;
+            padding: 6px 9px;
+            font-family: var(--font-mono);
+            font-size: 10px;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+        .drawer-body {
+            padding: 14px;
+        }
+        .drawer-panel {
+            display: none;
+        }
+        .drawer-panel.is-active {
+            display: block;
+        }
+        .diagnostic-drawer.is-collapsed .drawer-body {
+            display: none;
+        }
+        .diagnostic-drawer.is-collapsed .drawer-head {
+            border-bottom: 0;
+        }
+        @media (max-width: 760px) {
+            .drawer-head { grid-template-columns: 1fr; }
+            .drawer-toggle { width: fit-content; }
         }
         .budget-rows {
             display: grid;
@@ -406,6 +456,10 @@ JSAC_TEMPLATE.innerHTML = /* html */ `
             font-family: var(--font-mono);
             font-size: 10px;
             color: var(--text-dim);
+            cursor: pointer;
+        }
+        .budget-row.is-active {
+            color: var(--text);
         }
         .budget-track {
             position: relative;
@@ -426,6 +480,77 @@ JSAC_TEMPLATE.innerHTML = /* html */ `
         }
         .budget-fill.green {
             background: rgba(76,175,80,0.82);
+        }
+        .allocation-list,
+        .power-detail {
+            display: grid;
+            gap: 7px;
+        }
+        .allocation-row,
+        .power-group-row {
+            display: grid;
+            grid-template-columns: 44px 1fr 54px;
+            gap: 8px;
+            align-items: center;
+            font-family: var(--font-mono);
+            font-size: 10px;
+            color: var(--text-dim);
+            cursor: pointer;
+        }
+        .allocation-row.is-active,
+        .power-group-row.is-active {
+            color: var(--text);
+        }
+        .allocation-row.is-alert {
+            color: rgba(255, 135, 135, 0.95);
+        }
+        .allocation-track {
+            position: relative;
+            height: 8px;
+            border-radius: 99px;
+            background: rgba(255,255,255,0.075);
+            overflow: hidden;
+        }
+        .allocation-fill {
+            position: absolute;
+            inset: 0 auto 0 0;
+            width: 0%;
+            border-radius: inherit;
+            background: var(--allocation-color, var(--c-orange));
+            box-shadow: 0 0 12px rgba(255,255,255,0.12);
+            transition: width var(--dur-mid) var(--ease);
+        }
+        .mini-history {
+            display: grid;
+            gap: 7px;
+        }
+        .mini-history-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+        }
+        .mini-history-bars {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 5px;
+        }
+        .mini-history-bar {
+            height: 24px;
+            display: flex;
+            align-items: end;
+            border: 1px solid var(--rule-soft);
+            border-radius: 6px;
+            padding: 3px;
+            background: rgba(255,255,255,0.025);
+        }
+        .mini-history-bar span {
+            display: block;
+            width: 100%;
+            min-height: 2px;
+            border-radius: 4px 4px 2px 2px;
+            background: var(--mini-color, var(--c-orange));
+            transition: height var(--dur-mid) var(--ease);
         }
         .layer-trace, .trace-section + .trace-section {
             margin-top: 14px;
@@ -471,6 +596,59 @@ JSAC_TEMPLATE.innerHTML = /* html */ `
         .layer-fill.green {
             background: rgba(76,175,80,0.78);
         }
+        .layer-replay {
+            display: grid;
+            gap: 10px;
+        }
+        .trace-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .layer-pipeline {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 8px;
+        }
+        .layer-card {
+            display: grid;
+            gap: 7px;
+            padding: 9px;
+            border: 1px solid var(--rule-soft);
+            border-radius: 7px;
+            background: rgba(255,255,255,0.02);
+            color: var(--text-dim);
+            text-align: left;
+        }
+        .layer-card.is-active {
+            border-color: rgba(255, 106, 61, 0.72);
+            background: rgba(255, 106, 61, 0.08);
+            color: var(--text);
+        }
+        .layer-card-label,
+        .layer-card-stat {
+            font-family: var(--font-mono);
+            font-size: 10px;
+            letter-spacing: 0.06em;
+            font-variant-numeric: tabular-nums;
+        }
+        .mini-split {
+            position: relative;
+            height: 8px;
+            border-radius: 99px;
+            overflow: hidden;
+            background: rgba(255,255,255,0.075);
+        }
+        .mini-split span {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 0%;
+            transition: width var(--dur-mid) var(--ease), left var(--dur-mid) var(--ease);
+        }
+        .mini-split .yellow { background: rgba(246,196,69,0.78); }
+        .mini-split .green { background: rgba(76,175,80,0.78); }
         .history {
             display: grid;
             gap: 8px;
@@ -497,6 +675,28 @@ JSAC_TEMPLATE.innerHTML = /* html */ `
         .history-row.is-active .history-bar {
             opacity: 0.92;
         }
+        .trace-spark {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            gap: 12px;
+            align-items: center;
+        }
+        .spark-svg {
+            width: 100%;
+            height: 92px;
+            border: 1px solid var(--rule-soft);
+            border-radius: 7px;
+            background: rgba(255,255,255,0.025);
+        }
+        .trace-stats {
+            display: grid;
+            gap: 7px;
+            min-width: 116px;
+            font-family: var(--font-mono);
+            font-size: 10px;
+            color: var(--text-dim);
+            font-variant-numeric: tabular-nums;
+        }
         .message-edge {
             animation: messagePulse 1.6s linear infinite;
             animation-delay: var(--edge-delay, 0s);
@@ -508,10 +708,42 @@ JSAC_TEMPLATE.innerHTML = /* html */ `
         }
         .heat svg {
             width: 100%;
+            max-height: 360px;
             aspect-ratio: 1;
             border: 1px solid var(--rule-soft);
             border-radius: 6px;
             background: rgba(0,0,0,0.22);
+        }
+        .heat-grid {
+            display: grid;
+            grid-template-columns: minmax(220px, 360px) minmax(0, 1fr);
+            gap: 14px;
+            align-items: start;
+        }
+        @media (max-width: 760px) {
+            .heat-grid { grid-template-columns: 1fr; }
+        }
+        .heat-cell {
+            cursor: crosshair;
+            transition: opacity var(--dur-fast) var(--ease), stroke var(--dur-fast) var(--ease);
+        }
+        .heat-cell:hover {
+            stroke: rgba(255,255,255,0.76);
+            stroke-width: 1;
+        }
+        .heat-focus-line {
+            animation: focusPulse 1.1s ease-in-out infinite;
+        }
+        .constraint-alert {
+            animation: alertPulse 1.25s ease-in-out infinite;
+        }
+        @keyframes focusPulse {
+            0%, 100% { opacity: 0.48; }
+            50% { opacity: 0.95; }
+        }
+        @keyframes alertPulse {
+            0%, 100% { opacity: 0.52; stroke-width: 1.2; }
+            50% { opacity: 1; stroke-width: 2.4; }
         }
         .caption {
             margin-top: 12px;
@@ -530,7 +762,7 @@ JSAC_TEMPLATE.innerHTML = /* html */ `
         }
         .node-label {
             font-family: var(--font-mono);
-            font-size: 4px;
+            font-size: 3.35px;
             fill: var(--text-dim);
             pointer-events: none;
             user-select: none;
@@ -614,6 +846,10 @@ JSAC_TEMPLATE.innerHTML = /* html */ `
                 <div class="method-tabs" data-method-tabs></div>
             </div>
             <div>
+                <div class="panel-label">Selected group power</div>
+                <div class="allocation-list" data-allocation></div>
+            </div>
+            <div>
                 <div class="panel-label">Live metrics</div>
                 <div class="metric-list" data-metrics></div>
             </div>
@@ -621,34 +857,58 @@ JSAC_TEMPLATE.innerHTML = /* html */ `
                 <div class="panel-label">Selected node</div>
                 <div class="metric-sub" data-selected>Click a Blue car or receiver.</div>
             </div>
+            <div>
+                <div class="panel-label">Per-Blue budget</div>
+                <div class="budget-rows" data-budgets></div>
+            </div>
+            <div>
+                <div class="panel-label">Comparison pulse</div>
+                <div class="mini-history" data-mini-history></div>
+            </div>
         </aside>
     </div>
 
-    <div class="diagnostics">
-        <div class="strip">
-            <div class="panel-label">Per-Blue budget - selected method</div>
-            <div class="budget-rows" data-budgets></div>
-            <div class="layer-trace">
+    <div class="diagnostic-drawer" data-drawer>
+        <div class="drawer-head">
+            <div class="panel-label">Diagnostics</div>
+            <div class="drawer-tabs" aria-label="Diagnostic views">
+                <button type="button" data-diagnostic-tab="power">Power</button>
+                <button type="button" data-diagnostic-tab="history">History</button>
+                <button type="button" data-diagnostic-tab="heat">Heatmap</button>
+                <button type="button" data-diagnostic-tab="solver">Solver</button>
+            </div>
+            <button type="button" class="drawer-toggle" data-drawer-toggle>Collapse</button>
+        </div>
+        <div class="drawer-body">
+            <section class="drawer-panel" data-diagnostic-panel="power">
+                <div class="panel-label">Power allocation - selected method</div>
+                <div class="power-detail" data-power-detail></div>
+            </section>
+            <section class="drawer-panel" data-diagnostic-panel="history">
                 <div class="panel-label">Comparison history</div>
                 <div class="history" data-history></div>
-            </div>
-        </div>
-        <div class="strip heat">
-            <div class="panel-label">Channel matrix |h|^2</div>
-            <svg data-heat viewBox="0 0 220 220" preserveAspectRatio="xMidYMid meet" aria-label="JSAC channel matrix heatmap"></svg>
-        </div>
-        <div class="strip history-strip">
-            <div class="panel-label">Solver traces</div>
-            <div class="trace-stack">
-                <div class="trace-section">
-                    <div class="panel-label">GNN layer trace</div>
-                    <div data-layers></div>
+            </section>
+            <section class="drawer-panel heat" data-diagnostic-panel="heat">
+                <div class="heat-grid">
+                    <div>
+                        <div class="panel-label">Channel matrix |h|^2</div>
+                        <svg data-heat viewBox="0 0 220 220" preserveAspectRatio="xMidYMid meet" aria-label="JSAC channel matrix heatmap"></svg>
+                    </div>
+                    <div class="metric-sub" data-heat-readout>Hover a cell to link the matrix to the map.</div>
                 </div>
-                <div class="trace-section">
-                    <div class="panel-label">WMMSE iteration overlay</div>
-                    <div data-wmmse-trace></div>
+            </section>
+            <section class="drawer-panel" data-diagnostic-panel="solver">
+                <div class="trace-stack">
+                    <div class="trace-section">
+                        <div class="panel-label">GNN message-passing replay</div>
+                        <div data-layers></div>
+                    </div>
+                    <div class="trace-section">
+                        <div class="panel-label">WMMSE convergence</div>
+                        <div data-wmmse-trace></div>
+                    </div>
                 </div>
-            </div>
+            </section>
         </div>
     </div>
 
@@ -774,6 +1034,14 @@ class LiveRunJsacLab extends HTMLElement {
         this.methodAnimationFrame = 0;
         this.visualPower = null;
         this.visualGroupUtil = null;
+        this.allocationGroup = null;
+        this.allocationAnimationFrame = 0;
+        this.visualAllocationPower = null;
+        this.activeDiagnostic = 'power';
+        this.drawerCollapsed = false;
+        this.replayLayerIndex = -1;
+        this.replayTimer = 0;
+        this.hoverEdge = null;
 
         this.$field = this.shadowRoot.querySelector('[data-field]');
         this.$heat = this.shadowRoot.querySelector('[data-heat]');
@@ -785,6 +1053,12 @@ class LiveRunJsacLab extends HTMLElement {
         this.$status = this.shadowRoot.querySelector('[data-status]');
         this.$metrics = this.shadowRoot.querySelector('[data-metrics]');
         this.$budgets = this.shadowRoot.querySelector('[data-budgets]');
+        this.$allocation = this.shadowRoot.querySelector('[data-allocation]');
+        this.$miniHistory = this.shadowRoot.querySelector('[data-mini-history]');
+        this.$powerDetail = this.shadowRoot.querySelector('[data-power-detail]');
+        this.$drawer = this.shadowRoot.querySelector('[data-drawer]');
+        this.$drawerToggle = this.shadowRoot.querySelector('[data-drawer-toggle]');
+        this.$heatReadout = this.shadowRoot.querySelector('[data-heat-readout]');
         this.$layers = this.shadowRoot.querySelector('[data-layers]');
         this.$history = this.shadowRoot.querySelector('[data-history]');
         this.$wmmseTrace = this.shadowRoot.querySelector('[data-wmmse-trace]');
@@ -849,8 +1123,13 @@ class LiveRunJsacLab extends HTMLElement {
         this.shadowRoot.querySelectorAll('[data-preset]').forEach((btn) => {
             this._bindActionButton(btn, () => this._applyPreset(btn.dataset.preset));
         });
+        this.shadowRoot.querySelectorAll('[data-diagnostic-tab]').forEach((btn) => {
+            btn.addEventListener('click', () => this._setDiagnostic(btn.dataset.diagnosticTab));
+        });
+        this._bindActionButton(this.$drawerToggle, () => this._toggleDrawer());
 
         this._renderMethodTabs();
+        this._syncDiagnosticShell();
         this._loadSavedLayouts();
     }
 
@@ -959,6 +1238,8 @@ class LiveRunJsacLab extends HTMLElement {
             this._randomizeLayout(false);
         }
         this.selected = null;
+        this._clearAllocationTransition();
+        this.allocationGroup = null;
         this.last = null;
         this.results = null;
         this.layerTrace = null;
@@ -1000,8 +1281,34 @@ class LiveRunJsacLab extends HTMLElement {
         if (!this._methodNames().includes(method) || method === this.selectedMethod) return;
         const previous = this.selectedMethod;
         this.selectedMethod = method;
+        this._clearGnnReplay();
         this._renderMethodTabs();
         this._startMethodTransition(previous, method);
+    }
+
+    _setDiagnostic(name) {
+        if (!['power', 'history', 'heat', 'solver'].includes(name)) return;
+        this.activeDiagnostic = name;
+        this.drawerCollapsed = false;
+        this._syncDiagnosticShell();
+    }
+
+    _toggleDrawer() {
+        this.drawerCollapsed = !this.drawerCollapsed;
+        this._syncDiagnosticShell();
+    }
+
+    _syncDiagnosticShell() {
+        this.shadowRoot.querySelectorAll('[data-diagnostic-tab]').forEach((btn) => {
+            const active = btn.dataset.diagnosticTab === this.activeDiagnostic;
+            btn.classList.toggle('is-active', active);
+            btn.setAttribute('aria-pressed', active ? 'true' : 'false');
+        });
+        this.shadowRoot.querySelectorAll('[data-diagnostic-panel]').forEach((panel) => {
+            panel.classList.toggle('is-active', panel.dataset.diagnosticPanel === this.activeDiagnostic);
+        });
+        this.$drawer?.classList.toggle('is-collapsed', this.drawerCollapsed);
+        if (this.$drawerToggle) this.$drawerToggle.textContent = this.drawerCollapsed ? 'Expand' : 'Collapse';
     }
 
     async _load() {
@@ -1141,6 +1448,8 @@ class LiveRunJsacLab extends HTMLElement {
             }
         }
         this.selected = null;
+        this._clearAllocationTransition();
+        this.allocationGroup = null;
         this._channelRandoms = null;
         this._draw();
         if (recompute) this._scheduleCompute(0);
@@ -1220,6 +1529,8 @@ class LiveRunJsacLab extends HTMLElement {
             }
         }
         this.selected = null;
+        this._clearAllocationTransition();
+        this.allocationGroup = null;
         this.last = null;
         this.results = null;
         this.layerTrace = null;
@@ -1385,6 +1696,8 @@ class LiveRunJsacLab extends HTMLElement {
 
     async _computeAll() {
         if (!this.manifest || !this.weights) return;
+        this._clearGnnReplay();
+        this.hoverEdge = null;
         const ticket = ++this.computeTicket;
         const tensors = this._buildInputs();
         if (tensors.meta.k > this.manifest.max_k) {
@@ -1478,12 +1791,14 @@ class LiveRunJsacLab extends HTMLElement {
                     greenCount++;
                 }
             }
+            const metrics = this._metrics(tensors.losses, power, tensors.meta);
             layers.push({
                 label,
                 logits,
                 power,
                 yellowAvg: yellow / Math.max(1, yellowCount),
                 greenAvg: green / Math.max(1, greenCount),
+                ...metrics,
             });
         };
         const conv = (xIn) => {
@@ -1718,6 +2033,7 @@ class LiveRunJsacLab extends HTMLElement {
 
     _captureTransitionStart() {
         this._clearMethodTransition();
+        this.hoverEdge = null;
         if (this.resultAnimationFrame) {
             window.cancelAnimationFrame(this.resultAnimationFrame);
             this.resultAnimationFrame = 0;
@@ -1834,6 +2150,126 @@ class LiveRunJsacLab extends HTMLElement {
         }
         this.visualPower = null;
         this.visualGroupUtil = null;
+        this._clearGnnReplay();
+    }
+
+    _clearAllocationTransition() {
+        if (this.allocationAnimationFrame) {
+            window.cancelAnimationFrame(this.allocationAnimationFrame);
+            this.allocationAnimationFrame = 0;
+        }
+        this.visualAllocationPower = null;
+    }
+
+    _clearGnnReplay(redraw = false) {
+        if (this.replayTimer) {
+            window.clearTimeout(this.replayTimer);
+            this.replayTimer = 0;
+        }
+        this.replayLayerIndex = -1;
+        if (redraw) this._draw();
+    }
+
+    _activeGnnLayer() {
+        if (this.selectedMethod !== 'GNN' || this.replayLayerIndex < 0) return null;
+        return this.layerTrace?.layers?.[this.replayLayerIndex] || null;
+    }
+
+    _previewGnnLayer(index) {
+        const layers = this.layerTrace?.layers || [];
+        if (!layers[index]) return;
+        if (this.selectedMethod !== 'GNN') {
+            this.selectedMethod = 'GNN';
+            this._renderMethodTabs();
+        }
+        if (this.replayTimer) window.clearTimeout(this.replayTimer);
+        this.replayTimer = 0;
+        this.replayLayerIndex = index;
+        this._setDiagnostic('solver');
+        this._draw();
+    }
+
+    _playGnnReplay() {
+        const layers = this.layerTrace?.layers || [];
+        if (!layers.length) return;
+        this._clearMethodTransition();
+        if (this.selectedMethod !== 'GNN') {
+            this.selectedMethod = 'GNN';
+            this._renderMethodTabs();
+        }
+        this._setDiagnostic('solver');
+        let index = 0;
+        const step = () => {
+            this.replayLayerIndex = index;
+            this._draw();
+            index += 1;
+            if (index < layers.length) {
+                this.replayTimer = window.setTimeout(step, 620);
+            } else {
+                this.replayTimer = window.setTimeout(() => {
+                    this.replayTimer = 0;
+                    this.replayLayerIndex = -1;
+                    this._draw();
+                }, 700);
+            }
+        };
+        step();
+    }
+
+    _groupFromSelection(selection = this.selected) {
+        if (!selection) return null;
+        if (selection.kind === 'blue') return clamp(selection.index, 0, this.B - 1);
+        if (selection.kind === 'rx') return clamp(this.rx[selection.index]?.blue || 0, 0, this.B - 1);
+        return null;
+    }
+
+    _allocationSlots(group) {
+        if (!Number.isFinite(group)) return [];
+        const slots = [];
+        for (let i = 0; i < this._k(); i++) {
+            if (this.rx[i]?.blue === group) slots.push(i);
+        }
+        return slots;
+    }
+
+    _allocationPowersForGroup(group, power = this._selectedPower()) {
+        return this._allocationSlots(group).map((i) => clamp(power[i] || 0, 0, 1));
+    }
+
+    _setAllocationGroup(group, animate = true) {
+        if (!Number.isFinite(group)) {
+            this._clearAllocationTransition();
+            this.allocationGroup = null;
+            return;
+        }
+        group = clamp(group, 0, this.B - 1);
+        if (group === this.allocationGroup && !this.visualAllocationPower) return;
+
+        const to = this._allocationPowersForGroup(group);
+        const from = this.visualAllocationPower || (this.allocationGroup === null ? new Array(to.length).fill(0) : this._allocationPowersForGroup(this.allocationGroup));
+        this.allocationGroup = group;
+        this._clearAllocationTransition();
+
+        const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        if (!animate || from.length !== to.length || reduceMotion) return;
+
+        this.visualAllocationPower = [...from];
+        const start = performance.now();
+        const duration = 440;
+        const tick = (now) => {
+            const raw = clamp((now - start) / duration, 0, 1);
+            const eased = easeOutCubic(raw);
+            this.visualAllocationPower = this._interpolateArray(from, to, eased);
+            this._draw();
+            if (raw < 1) {
+                this.allocationAnimationFrame = window.requestAnimationFrame(tick);
+            } else {
+                this.allocationAnimationFrame = 0;
+                this.visualAllocationPower = null;
+                this._draw();
+            }
+        };
+        this.allocationAnimationFrame = window.requestAnimationFrame(tick);
     }
 
     _startMethodTransition(fromMethod, toMethod) {
@@ -1889,11 +2325,24 @@ class LiveRunJsacLab extends HTMLElement {
     _bindDrag() {
         this.$field.addEventListener('pointerdown', (ev) => {
             const node = ev.target.closest?.('.node');
-            if (!node) return;
+            if (!node) {
+                this.selected = null;
+                this._draw();
+                return;
+            }
             const kind = node.dataset.kind;
             const index = Number(node.dataset.index);
-            this.drag = { kind, index, el: node };
+            const point = this._fieldPointFromEvent(ev);
+            const current = kind === 'blue' ? this.blue[index] : this.rx[index];
+            this.drag = {
+                kind,
+                index,
+                el: node,
+                offsetX: current.x - point.x,
+                offsetY: current.y - point.y,
+            };
             this.selected = { kind, index };
+            this._setAllocationGroup(this._groupFromSelection(this.selected), true);
             node.setPointerCapture(ev.pointerId);
             node.classList.add('is-dragging');
             this._moveFromEvent(ev);
@@ -1913,11 +2362,20 @@ class LiveRunJsacLab extends HTMLElement {
         });
     }
 
-    _moveFromEvent(ev) {
+    _fieldPointFromEvent(ev) {
         const rect = this.$field.getBoundingClientRect();
         const field = this._fieldLength();
-        const x = clamp((ev.clientX - rect.left) / rect.width * field, 0, field);
-        const y = clamp((ev.clientY - rect.top) / rect.height * field, 0, field);
+        return {
+            x: (ev.clientX - rect.left) / rect.width * field,
+            y: (ev.clientY - rect.top) / rect.height * field,
+        };
+    }
+
+    _moveFromEvent(ev) {
+        const field = this._fieldLength();
+        const point = this._fieldPointFromEvent(ev);
+        const x = clamp(point.x + (this.drag.offsetX || 0), 0, field);
+        const y = clamp(point.y + (this.drag.offsetY || 0), 0, field);
         if (this.drag.kind === 'blue') {
             const b = this.blue[this.drag.index];
             this._moveNode('blue', this.drag.index, x - b.x, y - b.y);
@@ -1955,18 +2413,34 @@ class LiveRunJsacLab extends HTMLElement {
     _draw() {
         this._drawField();
         this._drawMetrics();
+        this._drawAllocation();
         this._drawBudgets();
+        this._drawPowerDetail();
+        this._drawMiniHistory();
         this._drawLayerTrace();
         this._drawHistory();
         this._drawWmmseTrace();
         this._drawHeatmap();
+        this._syncDiagnosticShell();
     }
 
     _selectedPower() {
+        const activeLayer = this._activeGnnLayer();
+        if (activeLayer?.power) return activeLayer.power;
         return this.visualPower || this._displaySource()?.[this.selectedMethod]?.power || new Array(this._k()).fill(0);
     }
 
     _selectedMethodResult() {
+        const activeLayer = this._activeGnnLayer();
+        if (activeLayer) {
+            const base = this._displaySource()?.GNN || {};
+            return {
+                ...base,
+                ...activeLayer,
+                engine: `${base.engine || 'GNN'} ${activeLayer.label}`,
+                timeMs: base.timeMs,
+            };
+        }
         const result = this._displaySource()?.[this.selectedMethod];
         if (!result || (!this.visualPower && !this.visualGroupUtil)) return result;
         return {
@@ -1985,6 +2459,7 @@ class LiveRunJsacLab extends HTMLElement {
         const method = this._selectedMethodResult();
         const meta = this.last?.meta || this._metadata();
         const losses = this._hasCurrentLosses() ? this.last.losses : null;
+        const focusGroup = this.selected ? this._focusedGroup() : null;
 
         svg.appendChild(svgEl('rect', { x: 0, y: 0, width: field, height: field, fill: 'rgba(255,255,255,0.015)' }));
         const gridStep = 25;
@@ -2006,7 +2481,8 @@ class LiveRunJsacLab extends HTMLElement {
             edges.slice(0, Math.min(90, edges.length)).forEach((e, n) => {
                 const tx = this.blue[meta.groupIds[e.source]];
                 const rx = this.rx[e.target];
-                const op = clamp(0.07 + 0.36 * Math.sqrt(e.score / (maxScore + JSAC_EPS)), 0.07, 0.43);
+                const related = focusGroup === null || meta.groupIds[e.source] === focusGroup || rx.blue === focusGroup;
+                const op = clamp(0.07 + 0.36 * Math.sqrt(e.score / (maxScore + JSAC_EPS)), 0.07, 0.43) * (related ? 1 : 0.28);
                 svg.appendChild(svgEl('line', {
                     class: 'message-edge',
                     x1: tx.x,
@@ -2021,36 +2497,63 @@ class LiveRunJsacLab extends HTMLElement {
             });
         }
 
+        if (this.hoverEdge && meta.groupIds[this.hoverEdge.source] !== undefined) {
+            const tx = this.blue[meta.groupIds[this.hoverEdge.source]];
+            const rx = this.rx[this.hoverEdge.target];
+            if (tx && rx) {
+                svg.appendChild(svgEl('line', {
+                    class: 'heat-focus-line',
+                    x1: tx.x,
+                    y1: tx.y,
+                    x2: rx.x,
+                    y2: rx.y,
+                    stroke: 'rgba(255,255,255,0.92)',
+                    'stroke-width': 1.35,
+                    'stroke-dasharray': '3 2',
+                }));
+                svg.appendChild(svgEl('circle', {
+                    cx: rx.x,
+                    cy: rx.y,
+                    r: 6.8,
+                    fill: 'none',
+                    stroke: 'rgba(255,255,255,0.75)',
+                    'stroke-width': 1.1,
+                }));
+            }
+        }
+
         for (let i = 0; i < meta.k; i++) {
             const rx = this.rx[i];
             const tx = this.blue[rx.blue];
             const isYellow = rx.type === 'yellow';
             const color = isYellow ? '246,196,69' : '76,175,80';
             const p = power[i] || 0;
+            const groupOpacity = focusGroup === null || rx.blue === focusGroup ? 1 : 0.22;
             svg.appendChild(svgEl('line', {
                 x1: tx.x,
                 y1: tx.y,
                 x2: rx.x,
                 y2: rx.y,
-                stroke: `rgba(${color},${0.25 + p * 0.72})`,
-                'stroke-width': 0.9 + p * 2.2,
+                stroke: `rgba(${color},${(0.22 + p * 0.66) * groupOpacity})`,
+                'stroke-width': 0.55 + p * 1.45,
             }));
         }
 
         for (let b = 0; b < this.B; b++) {
             const util = method?.groupUtil?.[b]?.total || 0;
             const blue = this.blue[b];
+            const groupOpacity = focusGroup === null || b === focusGroup ? 1 : 0.24;
             svg.appendChild(svgEl('circle', {
                 cx: blue.x,
                 cy: blue.y,
-                r: 7 + util * 7,
-                fill: 'none',
-                stroke: `rgba(77,163,255,${0.14 + util * 0.35})`,
-                'stroke-width': 2,
+                r: 4.4 + util * 2.4,
+                fill: `rgba(77,163,255,${(0.08 + util * 0.16) * groupOpacity})`,
+                stroke: 'none',
+                'pointer-events': 'none',
             }));
-            const group = svgEl('g', { class: 'node', 'data-kind': 'blue', 'data-index': b, 'aria-label': `Blue car ${b}` });
-            group.appendChild(svgEl('rect', { x: blue.x - 4.2, y: blue.y - 4.2, width: 8.4, height: 8.4, rx: 1.2, fill: 'var(--c-blue)', opacity: 0.95 }));
-            group.appendChild(svgEl('text', { class: 'node-label', x: blue.x + 5.8, y: blue.y + 1.6 }));
+            const group = svgEl('g', { class: 'node', 'data-kind': 'blue', 'data-index': b, 'aria-label': `Blue car ${b}`, opacity: groupOpacity });
+            group.appendChild(svgEl('rect', { x: blue.x - 2.9, y: blue.y - 2.9, width: 5.8, height: 5.8, rx: 0.9, fill: 'var(--c-blue)', opacity: 0.95 }));
+            group.appendChild(svgEl('text', { class: 'node-label', x: blue.x + 4.1, y: blue.y + 1.2 }));
             group.lastChild.textContent = `B${b}`;
             svg.appendChild(group);
         }
@@ -2060,12 +2563,24 @@ class LiveRunJsacLab extends HTMLElement {
             const isYellow = rx.type === 'yellow';
             const badYellow = Boolean(isYellow && method && method.sinr[i] < this.manifest.physics.sinr_min);
             const fill = isYellow ? 'var(--c-yellow)' : 'var(--c-green)';
-            const group = svgEl('g', { class: 'node', 'data-kind': 'rx', 'data-index': i, 'aria-label': `${isYellow ? 'Yellow' : 'Green'} receiver ${i}` });
-            if (badYellow) {
-                group.appendChild(svgEl('circle', { cx: rx.x, cy: rx.y, r: 5.5, fill: 'none', stroke: 'rgba(255,99,99,0.95)', 'stroke-width': 1.5 }));
+            const p = clamp(power[i] || 0, 0, 1);
+            const groupOpacity = focusGroup === null || rx.blue === focusGroup ? 1 : 0.24;
+            const group = svgEl('g', { class: 'node', 'data-kind': 'rx', 'data-index': i, 'aria-label': `${isYellow ? 'Yellow' : 'Green'} receiver ${i}`, opacity: groupOpacity });
+            if (p > 0.08) {
+                group.appendChild(svgEl('circle', {
+                    cx: rx.x,
+                    cy: rx.y,
+                    r: 3.3 + p * 4.6,
+                    fill: isYellow ? 'rgba(246,196,69,0.24)' : 'rgba(76,175,80,0.24)',
+                    stroke: 'none',
+                    'pointer-events': 'none',
+                }));
             }
-            group.appendChild(svgEl('circle', { cx: rx.x, cy: rx.y, r: 3.2, fill, opacity: 0.92 }));
-            group.appendChild(svgEl('text', { class: 'node-label', x: rx.x + 4.4, y: rx.y + 1.4 }));
+            if (badYellow) {
+                group.appendChild(svgEl('circle', { class: 'constraint-alert', cx: rx.x, cy: rx.y, r: 4.6, fill: 'none', stroke: 'rgba(255,99,99,0.95)', 'stroke-width': 1.2 }));
+            }
+            group.appendChild(svgEl('circle', { cx: rx.x, cy: rx.y, r: 2.45, fill, opacity: 0.92 }));
+            group.appendChild(svgEl('text', { class: 'node-label', x: rx.x + 3.3, y: rx.y + 1.2 }));
             group.lastChild.textContent = `${isYellow ? 'Y' : 'G'}${i}`;
             svg.appendChild(group);
         }
@@ -2097,7 +2612,7 @@ class LiveRunJsacLab extends HTMLElement {
         const display = this._displaySource();
         this.$metrics.innerHTML = '';
         for (const method of methods) {
-            const r = display?.[method];
+            const r = method === this.selectedMethod ? (this._selectedMethodResult() || display?.[method]) : display?.[method];
             const row = document.createElement('div');
             row.className = 'metric-row';
             row.classList.toggle('is-active', method === this.selectedMethod);
@@ -2121,12 +2636,20 @@ class LiveRunJsacLab extends HTMLElement {
     _drawBudgets() {
         this.$budgets.innerHTML = '';
         const r = this._selectedMethodResult();
+        const focus = this._focusedGroup();
+        const activeGroup = this.allocationGroup;
         for (let b = 0; b < this.B; b++) {
             const util = r?.groupUtil?.[b] || { total: 0, yellow: 0, green: 0 };
             const yellowW = clamp(util.yellow, 0, 1) * 100;
             const greenW = clamp(util.green, 0, 1) * 100;
             const row = document.createElement('div');
             row.className = 'budget-row';
+            row.classList.toggle('is-active', b === focus || b === activeGroup);
+            row.addEventListener('click', () => {
+                this.selected = { kind: 'blue', index: b };
+                this._setAllocationGroup(b, true);
+                this._draw();
+            });
             row.innerHTML = `
                 <span>B${b}</span>
                 <span class="budget-track">
@@ -2139,6 +2662,111 @@ class LiveRunJsacLab extends HTMLElement {
         }
     }
 
+    _focusedGroup() {
+        return this._groupFromSelection(this.selected);
+    }
+
+    _drawAllocation() {
+        if (!this.$allocation) return;
+        this.$allocation.innerHTML = '';
+        const result = this._selectedMethodResult();
+        const group = this.allocationGroup;
+        const links = this._allocationSlots(group);
+        if (!links.length) {
+            this.$allocation.innerHTML = '<div class="metric-sub">Click a Blue car or receiver.</div>';
+            return;
+        }
+        const animatedPower = this.visualAllocationPower;
+        links.forEach((i, slot) => {
+            const rx = this.rx[i];
+            const isYellow = rx.type === 'yellow';
+            const color = isYellow ? 'rgba(246,196,69,0.86)' : 'rgba(76,175,80,0.86)';
+            const p = clamp(animatedPower?.[slot] ?? result?.power?.[i] ?? 0, 0, 1);
+            const sinr = result?.sinr?.[i];
+            const isAlert = isYellow && Number.isFinite(sinr) && this.manifest && sinr < this.manifest.physics.sinr_min;
+            const row = document.createElement('div');
+            row.className = 'allocation-row';
+            row.classList.toggle('is-active', this.selected?.kind === 'rx' && this.selected.index === i);
+            row.classList.toggle('is-alert', isAlert);
+            row.addEventListener('click', () => {
+                this.selected = { kind: 'rx', index: i };
+                this._setAllocationGroup(group, false);
+                this._draw();
+            });
+            row.innerHTML = `
+                <span>${isYellow ? 'Y' : 'G'}${i}</span>
+                <span class="allocation-track">
+                    <span class="allocation-fill" style="--allocation-color:${color};width:${p * 100}%"></span>
+                </span>
+                <span>${fmt(p, 2)}</span>
+            `;
+            row.title = isYellow ? `SINR ${fmt(sinr, 2)}` : `rate ${fmt(result?.rates?.[i], 2)}`;
+            this.$allocation.appendChild(row);
+        });
+    }
+
+    _drawPowerDetail() {
+        if (!this.$powerDetail) return;
+        this.$powerDetail.innerHTML = '';
+        const result = this._selectedMethodResult();
+        const focus = this._focusedGroup();
+        const activeGroup = this.allocationGroup;
+        if (!result?.groupUtil) {
+            this.$powerDetail.innerHTML = '<div class="metric-sub">Power appears after the first live solve.</div>';
+            return;
+        }
+        for (let b = 0; b < this.B; b++) {
+            const util = result.groupUtil[b] || { total: 0, yellow: 0, green: 0 };
+            const yellowW = clamp(util.yellow, 0, 1) * 100;
+            const greenW = clamp(util.green, 0, 1) * 100;
+            const row = document.createElement('div');
+            row.className = 'power-group-row';
+            row.classList.toggle('is-active', b === activeGroup || b === focus);
+            row.addEventListener('click', () => {
+                this.selected = { kind: 'blue', index: b };
+                this._setAllocationGroup(b, true);
+                this._draw();
+            });
+            row.innerHTML = `
+                <span>B${b}</span>
+                <span class="budget-track">
+                    <span class="budget-fill yellow" style="left:0;width:${yellowW}%"></span>
+                    <span class="budget-fill green" style="left:${yellowW}%;width:${greenW}%"></span>
+                </span>
+                <span>${fmt(util.total, 2)}</span>
+            `;
+            row.title = `Yellow ${fmt(util.yellow, 2)} / Green ${fmt(util.green, 2)}`;
+            this.$powerDetail.appendChild(row);
+        }
+    }
+
+    _drawMiniHistory() {
+        if (!this.$miniHistory) return;
+        this.$miniHistory.innerHTML = '';
+        const latest = this.history[this.history.length - 1];
+        if (!latest) {
+            this.$miniHistory.innerHTML = '<div class="metric-sub">Waiting for first solve.</div>';
+            return;
+        }
+        const methods = ['WMMSE', 'GNN', 'Naive'];
+        const max = Math.max(...methods.map((method) => latest[method] || 0), 1);
+        const delta = latest.WMMSE > 0 ? (latest.GNN / latest.WMMSE - 1) * 100 : 0;
+        const deltaText = `${delta >= 0 ? '+' : ''}${fmt(delta, 1)}%`;
+        const head = document.createElement('div');
+        head.className = 'mini-history-head';
+        head.innerHTML = `<span class="metric-sub">GNN vs WMMSE</span><span class="pill">${deltaText}</span>`;
+        const bars = document.createElement('div');
+        bars.className = 'mini-history-bars';
+        for (const method of methods) {
+            const wrap = document.createElement('div');
+            wrap.className = 'mini-history-bar';
+            wrap.title = `${method} ${fmt(latest[method], 2)}`;
+            wrap.innerHTML = `<span style="--mini-color:${this._methodColor(method)};height:${clamp((latest[method] || 0) / max, 0, 1) * 100}%"></span>`;
+            bars.appendChild(wrap);
+        }
+        this.$miniHistory.append(head, bars);
+    }
+
     _drawLayerTrace() {
         this.$layers.innerHTML = '';
         const layers = this.layerTrace?.layers || [];
@@ -2146,21 +2774,43 @@ class LiveRunJsacLab extends HTMLElement {
             this.$layers.innerHTML = '<div class="metric-sub">Waiting for GNN weights.</div>';
             return;
         }
-        for (const layer of layers) {
+        const activeIndex = this.replayLayerIndex;
+        const root = document.createElement('div');
+        root.className = 'layer-replay';
+        root.innerHTML = `
+            <div class="trace-actions">
+                <button type="button" class="trace-action" data-replay-gnn>Replay</button>
+                <button type="button" class="trace-action" data-layer-final>Final</button>
+                <span class="metric-sub">${activeIndex >= 0 ? layers[activeIndex].label : 'final'} allocation on map</span>
+            </div>
+            <div class="layer-pipeline"></div>
+        `;
+        const pipeline = root.querySelector('.layer-pipeline');
+        for (let index = 0; index < layers.length; index++) {
+            const layer = layers[index];
             const yellowW = clamp(layer.yellowAvg * this.resultAnimationT, 0, 1) * 100;
             const greenW = clamp(layer.greenAvg * this.resultAnimationT, 0, 1) * 100;
-            const row = document.createElement('div');
-            row.className = 'layer-row';
-            row.innerHTML = `
-                <span>${layer.label}</span>
-                <span class="layer-track">
-                    <span class="layer-fill yellow" style="left:0;width:${yellowW}%"></span>
-                    <span class="layer-fill green" style="left:${yellowW}%;width:${greenW}%"></span>
+            const card = document.createElement('button');
+            card.type = 'button';
+            card.className = 'layer-card';
+            card.classList.toggle('is-active', index === activeIndex);
+            card.dataset.layerIndex = String(index);
+            card.innerHTML = `
+                <span class="layer-card-label">${layer.label}</span>
+                <span class="mini-split">
+                    <span class="yellow" style="left:0;width:${yellowW}%"></span>
+                    <span class="green" style="left:${yellowW}%;width:${greenW}%"></span>
                 </span>
-                <span>Y ${fmt(layer.yellowAvg, 2)} / G ${fmt(layer.greenAvg, 2)}</span>
+                <span class="layer-card-stat">SR ${fmt(layer.greenSumRate, 1)} / V ${Math.round(layer.yellowViolations || 0)}</span>
             `;
-            this.$layers.appendChild(row);
+            pipeline.appendChild(card);
         }
+        root.querySelector('[data-replay-gnn]')?.addEventListener('click', () => this._playGnnReplay());
+        root.querySelector('[data-layer-final]')?.addEventListener('click', () => this._clearGnnReplay(true));
+        root.querySelectorAll('[data-layer-index]').forEach((btn) => {
+            btn.addEventListener('click', () => this._previewGnnLayer(Number(btn.dataset.layerIndex)));
+        });
+        this.$layers.appendChild(root);
     }
 
     _drawHistory() {
@@ -2203,19 +2853,38 @@ class LiveRunJsacLab extends HTMLElement {
             return;
         }
         const max = Math.max(...trace.map((entry) => entry.greenSumRate), 1);
-        for (const entry of trace) {
-            const width = clamp(entry.greenSumRate / max, 0, 1) * this.resultAnimationT * 100;
-            const row = document.createElement('div');
-            row.className = 'layer-row';
-            row.innerHTML = `
-                <span>I${entry.iter}</span>
-                <span class="layer-track">
-                    <span class="layer-fill yellow" style="left:0;width:${width}%"></span>
-                </span>
-                <span>G ${fmt(entry.greenSumRate, 1)} / V ${entry.yellowViolations}</span>
-            `;
-            this.$wmmseTrace.appendChild(row);
-        }
+        const min = Math.min(...trace.map((entry) => entry.greenSumRate));
+        const width = 420;
+        const height = 92;
+        const pad = 12;
+        const progress = this.resultAnimationT;
+        const denom = Math.max(max - min, 1e-9);
+        const points = trace.map((entry, index) => {
+            const x = pad + (width - pad * 2) * (index / Math.max(1, trace.length - 1)) * progress;
+            const y = height - pad - (height - pad * 2) * ((entry.greenSumRate - min) / denom);
+            return `${fmt(x, 2)},${fmt(y, 2)}`;
+        }).join(' ');
+        const dots = trace.map((entry, index) => {
+            const reveal = index <= Math.floor((trace.length - 1) * progress);
+            if (!reveal) return '';
+            const x = pad + (width - pad * 2) * (index / Math.max(1, trace.length - 1));
+            const y = height - pad - (height - pad * 2) * ((entry.greenSumRate - min) / denom);
+            return `<circle cx="${fmt(x, 2)}" cy="${fmt(y, 2)}" r="3" fill="var(--c-blue)"><title>I${entry.iter} G ${fmt(entry.greenSumRate, 2)} / V ${entry.yellowViolations}</title></circle>`;
+        }).join('');
+        const last = trace[trace.length - 1];
+        this.$wmmseTrace.innerHTML = `
+            <div class="trace-spark">
+                <svg class="spark-svg" viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" role="img" aria-label="WMMSE convergence sparkline">
+                    <polyline points="${points}" fill="none" stroke="var(--c-blue)" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"></polyline>
+                    ${dots}
+                </svg>
+                <div class="trace-stats">
+                    <span>final G ${fmt(last.greenSumRate, 2)}</span>
+                    <span>viol ${Math.round(last.yellowViolations)}</span>
+                    <span>${trace.length} checkpoints</span>
+                </div>
+            </div>
+        `;
     }
 
     _drawHeatmap() {
@@ -2242,13 +2911,33 @@ class LiveRunJsacLab extends HTMLElement {
                     ? `rgba(246,196,69,${0.24 + 0.62 * t})`
                     : `rgba(76,175,80,${0.24 + 0.62 * t})`;
                 else if (raw > 0) color = `rgba(160,170,180,${0.08 + 0.48 * t})`;
-                svg.appendChild(svgEl('rect', {
+                const cell = svgEl('rect', {
+                    class: 'heat-cell',
                     x: j * size,
                     y: i * size,
                     width: Math.max(1, size - 0.6),
                     height: Math.max(1, size - 0.6),
                     fill: color,
-                }));
+                });
+                cell.addEventListener('pointerenter', () => {
+                    this.hoverEdge = { target: i, source: j, raw };
+                    if (this.$heatReadout) {
+                        const sourceGroup = this.last.meta.groupIds[j];
+                        this.$heatReadout.textContent = `Tx B${sourceGroup} link ${j} -> ${this.rx[i].type.toUpperCase()}${i} |h|^2 ${raw.toExponential(2)}`;
+                    }
+                    this._drawField();
+                });
+                cell.addEventListener('pointerleave', () => {
+                    this.hoverEdge = null;
+                    if (this.$heatReadout) this.$heatReadout.textContent = 'Hover a cell to link the matrix to the map.';
+                    this._drawField();
+                });
+                cell.addEventListener('click', () => {
+                    this.selected = { kind: 'rx', index: i };
+                    this._setAllocationGroup(this.rx[i]?.blue, true);
+                    this._draw();
+                });
+                svg.appendChild(cell);
             }
         }
     }
