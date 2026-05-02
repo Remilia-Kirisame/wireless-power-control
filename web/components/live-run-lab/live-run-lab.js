@@ -1,4 +1,4 @@
-import './live-run-jsac-lab.js';
+import './live-run-jsac-lab.js?v=1.0.3';
 
 /* <live-run-lab> - Live Run browser inference playground.
  *
@@ -76,22 +76,23 @@ TEMPLATE.innerHTML = /* html */ `
             margin-top: 5px;
             max-width: 72ch;
         }
-        .mode-tabs, .method-tabs, .actions {
+        .mode-tabs, .method-tabs {
             display: flex;
             align-items: center;
             gap: 8px;
             flex-wrap: wrap;
         }
-        button, select, label.toggle {
+        button, select, .switch {
             border: 1px solid var(--rule);
             background: rgba(255,255,255,0.03);
-            color: var(--text-dim);
+            color: var(--text);
             border-radius: 6px;
-            font-family: var(--font-mono);
-            font-size: 11px;
-            letter-spacing: 0.08em;
-            text-transform: uppercase;
-            padding: 7px 10px;
+            font-family: var(--font-sans);
+            font-size: 13px;
+            font-weight: 600;
+            letter-spacing: 0;
+            min-height: 34px;
+            padding: 7px 11px;
         }
         button {
             cursor: pointer;
@@ -114,26 +115,112 @@ TEMPLATE.innerHTML = /* html */ `
         select {
             color: var(--text);
             background: var(--surface-2);
-        }
-        label.toggle {
-            display: inline-flex;
-            align-items: center;
-            gap: 7px;
-            cursor: pointer;
-        }
-        label.toggle input {
-            accent-color: var(--c-orange);
+            min-width: 74px;
         }
         .toolbar {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 14px;
-            flex-wrap: wrap;
-            border-top: 1px solid var(--rule-soft);
-            border-bottom: 1px solid var(--rule-soft);
-            padding: 12px 0;
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            align-items: start;
+            gap: 12px;
+            border: 1px solid var(--rule-soft);
+            border-radius: 8px;
+            padding: 12px;
             margin-bottom: 18px;
+            background: rgba(255,255,255,0.018);
+        }
+        .control-deck {
+            display: grid;
+            grid-template-columns: minmax(200px, 0.8fr) minmax(280px, 1.2fr) minmax(260px, 1fr);
+            gap: 10px;
+            min-width: 0;
+        }
+        .control-group {
+            min-width: 0;
+            padding: 10px;
+            border: 1px solid var(--rule-soft);
+            border-radius: 8px;
+            background: rgba(0,0,0,0.16);
+        }
+        .control-title {
+            display: block;
+            margin-bottom: 8px;
+            color: var(--text-mute);
+            font-family: var(--font-mono);
+            font-size: 10px;
+            letter-spacing: 0.13em;
+            text-transform: uppercase;
+        }
+        .control-row {
+            display: flex;
+            align-items: end;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .control-field {
+            display: grid;
+            gap: 5px;
+            min-width: 118px;
+            flex: 1 1 118px;
+        }
+        .control-field.is-narrow {
+            flex: 0 0 88px;
+            min-width: 88px;
+        }
+        .control-field > span {
+            color: var(--text-dim);
+            font-size: 12px;
+            font-weight: 500;
+        }
+        .stepper {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .icon-btn {
+            width: 34px;
+            padding: 0;
+            font-family: var(--font-mono);
+            font-size: 17px;
+            line-height: 1;
+        }
+        .action-btn {
+            color: var(--text-dim);
+            background: rgba(255,255,255,0.025);
+        }
+        .action-btn:hover {
+            color: var(--text);
+            background: rgba(255,255,255,0.05);
+        }
+        .save-btn {
+            border-color: rgba(255, 106, 61, 0.45);
+            color: var(--text);
+            background: rgba(255, 106, 61, 0.08);
+        }
+        .switch {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            color: var(--text-dim);
+            background: rgba(255,255,255,0.025);
+        }
+        .switch input {
+            accent-color: var(--c-orange);
+        }
+        .mode-tabs button,
+        .method-tabs button {
+            font-family: var(--font-mono);
+            font-size: 11px;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+        @media (max-width: 1180px) {
+            .toolbar { grid-template-columns: 1fr; }
+            .control-deck { grid-template-columns: 1fr 1fr; }
+        }
+        @media (max-width: 720px) {
+            .control-deck { grid-template-columns: 1fr; }
+            .status { width: 100%; box-sizing: border-box; justify-content: center; }
         }
         .stage {
             display: grid;
@@ -260,6 +347,12 @@ TEMPLATE.innerHTML = /* html */ `
             display: inline-flex;
             align-items: center;
             gap: 8px;
+            white-space: nowrap;
+            min-height: 34px;
+            padding: 0 11px;
+            border: 1px solid var(--rule-soft);
+            border-radius: 8px;
+            background: rgba(0,0,0,0.16);
         }
         .status .dot {
             width: 7px;
@@ -495,32 +588,46 @@ TEMPLATE.innerHTML = /* html */ `
 
     <div data-panel="d2d">
     <div class="toolbar">
-        <div class="actions">
-            <label class="toggle">K
+        <div class="control-deck">
+            <section class="control-group" aria-label="Topology controls">
+                <span class="control-title">Topology</span>
+                <div class="control-row">
+                    <label class="control-field is-narrow"><span>Pairs K</span>
                 <select data-k></select>
-            </label>
-            <label class="toggle">Preset
-                <select data-preset-select>
-                    <option value="custom">Custom</option>
-                    <option value="balanced">Balanced</option>
-                    <option value="hidden">Hidden terminal</option>
-                    <option value="crowded">Crowded corner</option>
-                </select>
-            </label>
-            <label class="toggle">Saved
-                <select data-saved-select>
-                    <option value="">Saved layouts</option>
-                </select>
-            </label>
-            <button type="button" data-save-layout>Save layout</button>
-            <button type="button" data-add>Add pair</button>
-            <button type="button" data-remove>Remove pair</button>
-            <button type="button" data-random>Randomize</button>
-            <button type="button" data-fading>Shuffle fading</button>
-            <button type="button" data-preset="balanced">Balanced</button>
-            <button type="button" data-preset="hidden">Hidden terminal</button>
-            <button type="button" data-preset="crowded">Crowded corner</button>
-            <label class="toggle"><input type="checkbox" data-freeze checked />Freeze fading</label>
+                    </label>
+                    <div class="stepper" aria-label="Adjust pair count">
+                        <button type="button" class="icon-btn" data-remove aria-label="Remove pair">-</button>
+                        <button type="button" class="icon-btn" data-add aria-label="Add pair">+</button>
+                    </div>
+                </div>
+            </section>
+            <section class="control-group" aria-label="Layout controls">
+                <span class="control-title">Layout</span>
+                <div class="control-row">
+                    <label class="control-field"><span>Preset</span>
+                        <select data-preset-select>
+                            <option value="custom">Custom</option>
+                            <option value="balanced">Balanced field</option>
+                            <option value="hidden">Hidden terminal</option>
+                            <option value="crowded">Dense interference</option>
+                        </select>
+                    </label>
+                    <label class="control-field"><span>Saved</span>
+                        <select data-saved-select>
+                            <option value="">Saved layouts</option>
+                        </select>
+                    </label>
+                    <button type="button" class="save-btn" data-save-layout>Save</button>
+                </div>
+            </section>
+            <section class="control-group" aria-label="Channel controls">
+                <span class="control-title">Channel</span>
+                <div class="control-row">
+                    <button type="button" class="action-btn" data-random>New layout</button>
+                    <button type="button" class="action-btn" data-fading>New fading</button>
+                    <label class="switch"><input type="checkbox" data-freeze checked />Lock fading</label>
+                </div>
+            </section>
         </div>
         <span class="status"><span class="dot"></span><span data-status>loading model</span></span>
     </div>
@@ -1007,6 +1114,7 @@ class LiveRunLab extends HTMLElement {
     _applyPreset(name) {
         const presets = {
             balanced: {
+                seed: 41,
                 k: 8,
                 tx: [
                     [150, 170], [360, 145], [640, 165], [830, 230],
@@ -1018,6 +1126,7 @@ class LiveRunLab extends HTMLElement {
                 ],
             },
             hidden: {
+                seed: 83,
                 k: 6,
                 tx: [
                     [170, 250], [475, 232], [515, 278],
@@ -1029,20 +1138,22 @@ class LiveRunLab extends HTMLElement {
                 ],
             },
             crowded: {
+                seed: 127,
                 k: 10,
                 tx: [
-                    [130, 160], [205, 135], [280, 190], [190, 250], [335, 270],
-                    [710, 170], [820, 230], [745, 330], [520, 760], [640, 835],
+                    [135, 170], [310, 140], [485, 205], [675, 155], [850, 230],
+                    [170, 650], [360, 800], [570, 700], [760, 820], [860, 610],
                 ],
                 rx: [
-                    [175, 190], [242, 165], [235, 220], [236, 290], [296, 310],
-                    [758, 198], [780, 270], [790, 366], [566, 728], [596, 804],
+                    [178, 198], [352, 167], [452, 238], [718, 183], [815, 270],
+                    [212, 625], [398, 772], [612, 732], [724, 790], [822, 580],
                 ],
             },
         };
         const preset = presets[name] || presets.balanced;
         const field = this._fieldLength();
         this._captureTransitionStart();
+        if (Number.isFinite(preset.seed)) this.seed = preset.seed;
         this.k = preset.k;
         this.$k.value = String(this.k);
         this.$presetSelect.value = name;

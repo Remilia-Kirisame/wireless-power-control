@@ -34,32 +34,33 @@ JSAC_TEMPLATE.innerHTML = /* html */ `
             display: none !important;
         }
         .toolbar {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 14px;
-            flex-wrap: wrap;
-            border-top: 1px solid var(--rule-soft);
-            border-bottom: 1px solid var(--rule-soft);
-            padding: 12px 0;
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            align-items: start;
+            gap: 12px;
+            border: 1px solid var(--rule-soft);
+            border-radius: 8px;
+            padding: 12px;
             margin-bottom: 18px;
+            background: rgba(255,255,255,0.018);
         }
-        .actions, .method-tabs {
+        .method-tabs {
             display: flex;
             align-items: center;
             gap: 8px;
             flex-wrap: wrap;
         }
-        button, select, label.toggle {
+        button, select, .switch {
             border: 1px solid var(--rule);
             background: rgba(255,255,255,0.03);
-            color: var(--text-dim);
+            color: var(--text);
             border-radius: 6px;
-            font-family: var(--font-mono);
-            font-size: 11px;
-            letter-spacing: 0.08em;
-            text-transform: uppercase;
-            padding: 7px 10px;
+            font-family: var(--font-sans);
+            font-size: 13px;
+            font-weight: 600;
+            letter-spacing: 0;
+            min-height: 34px;
+            padding: 7px 11px;
         }
         button {
             cursor: pointer;
@@ -77,15 +78,100 @@ JSAC_TEMPLATE.innerHTML = /* html */ `
         select {
             color: var(--text);
             background: var(--surface-2);
+            min-width: 74px;
         }
-        label.toggle {
+        .control-deck {
+            display: grid;
+            grid-template-columns: minmax(360px, 1.2fr) minmax(280px, 1fr) minmax(260px, 0.9fr);
+            gap: 10px;
+            min-width: 0;
+        }
+        .control-group {
+            min-width: 0;
+            padding: 10px;
+            border: 1px solid var(--rule-soft);
+            border-radius: 8px;
+            background: rgba(0,0,0,0.16);
+        }
+        .control-title {
+            display: block;
+            margin-bottom: 8px;
+            color: var(--text-mute);
+            font-family: var(--font-mono);
+            font-size: 10px;
+            letter-spacing: 0.13em;
+            text-transform: uppercase;
+        }
+        .control-row {
+            display: flex;
+            align-items: end;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .control-field {
+            display: grid;
+            gap: 5px;
+            min-width: 116px;
+            flex: 1 1 116px;
+        }
+        .control-field.is-narrow {
+            flex: 0 0 88px;
+            min-width: 88px;
+        }
+        .control-field > span {
+            color: var(--text-dim);
+            font-size: 12px;
+            font-weight: 500;
+        }
+        .stepper {
             display: inline-flex;
             align-items: center;
-            gap: 7px;
-            cursor: pointer;
+            gap: 6px;
         }
-        label.toggle input {
+        .icon-btn {
+            width: 34px;
+            padding: 0;
+            font-family: var(--font-mono);
+            font-size: 17px;
+            line-height: 1;
+        }
+        .action-btn {
+            color: var(--text-dim);
+            background: rgba(255,255,255,0.025);
+        }
+        .action-btn:hover {
+            color: var(--text);
+            background: rgba(255,255,255,0.05);
+        }
+        .save-btn {
+            border-color: rgba(255, 106, 61, 0.45);
+            color: var(--text);
+            background: rgba(255, 106, 61, 0.08);
+        }
+        .switch {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            color: var(--text-dim);
+            background: rgba(255,255,255,0.025);
+        }
+        .switch input {
             accent-color: var(--c-orange);
+        }
+        .method-tabs button {
+            font-family: var(--font-mono);
+            font-size: 11px;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+        @media (max-width: 1180px) {
+            .toolbar { grid-template-columns: 1fr; }
+            .control-deck { grid-template-columns: 1fr 1fr; }
+        }
+        @media (max-width: 720px) {
+            .control-deck { grid-template-columns: 1fr; }
+            .status { width: 100%; box-sizing: border-box; justify-content: center; }
         }
         .status {
             font-family: var(--font-mono);
@@ -95,6 +181,12 @@ JSAC_TEMPLATE.innerHTML = /* html */ `
             display: inline-flex;
             align-items: center;
             gap: 8px;
+            white-space: nowrap;
+            min-height: 34px;
+            padding: 0 11px;
+            border: 1px solid var(--rule-soft);
+            border-radius: 8px;
+            background: rgba(0,0,0,0.16);
         }
         .status .dot {
             width: 7px;
@@ -452,38 +544,52 @@ JSAC_TEMPLATE.innerHTML = /* html */ `
     </style>
 
     <div class="toolbar">
-        <div class="actions">
-            <label class="toggle">B
-                <select data-b></select>
-            </label>
-            <label class="toggle">Y
-                <select data-my></select>
-            </label>
-            <label class="toggle">G
-                <select data-mg></select>
-            </label>
-            <label class="toggle">Preset
-                <select data-preset-select>
-                    <option value="custom">Custom</option>
-                    <option value="balanced">Balanced highway</option>
-                    <option value="sensing">Sensing stress</option>
-                    <option value="crowded">Crowded corner</option>
-                </select>
-            </label>
-            <label class="toggle">Saved
-                <select data-saved-select>
-                    <option value="">Saved layouts</option>
-                </select>
-            </label>
-            <button type="button" data-save-layout>Save layout</button>
-            <button type="button" data-add-blue>Add Blue</button>
-            <button type="button" data-remove-blue>Remove Blue</button>
-            <button type="button" data-random>Randomize</button>
-            <button type="button" data-fading>Shuffle fading</button>
-            <button type="button" data-preset="balanced">Balanced highway</button>
-            <button type="button" data-preset="sensing">Sensing stress</button>
-            <button type="button" data-preset="crowded">Crowded corner</button>
-            <label class="toggle"><input type="checkbox" data-freeze checked />Freeze fading</label>
+        <div class="control-deck">
+            <section class="control-group" aria-label="Topology controls">
+                <span class="control-title">Topology</span>
+                <div class="control-row">
+                    <label class="control-field is-narrow"><span>Blue cars B</span>
+                        <select data-b></select>
+                    </label>
+                    <label class="control-field is-narrow"><span>Yellow / Blue</span>
+                        <select data-my></select>
+                    </label>
+                    <label class="control-field is-narrow"><span>Green / Blue</span>
+                        <select data-mg></select>
+                    </label>
+                    <div class="stepper" aria-label="Adjust Blue car count">
+                        <button type="button" class="icon-btn" data-remove-blue aria-label="Remove Blue car">-</button>
+                        <button type="button" class="icon-btn" data-add-blue aria-label="Add Blue car">+</button>
+                    </div>
+                </div>
+            </section>
+            <section class="control-group" aria-label="Layout controls">
+                <span class="control-title">Layout</span>
+                <div class="control-row">
+                    <label class="control-field"><span>Preset</span>
+                        <select data-preset-select>
+                            <option value="custom">Custom</option>
+                            <option value="balanced">Balanced highway</option>
+                            <option value="sensing">Sensing pressure</option>
+                            <option value="crowded">Dense reuse</option>
+                        </select>
+                    </label>
+                    <label class="control-field"><span>Saved</span>
+                        <select data-saved-select>
+                            <option value="">Saved layouts</option>
+                        </select>
+                    </label>
+                    <button type="button" class="save-btn" data-save-layout>Save</button>
+                </div>
+            </section>
+            <section class="control-group" aria-label="Channel controls">
+                <span class="control-title">Channel</span>
+                <div class="control-row">
+                    <button type="button" class="action-btn" data-random>New layout</button>
+                    <button type="button" class="action-btn" data-fading>New fading</button>
+                    <label class="switch"><input type="checkbox" data-freeze checked />Lock fading</label>
+                </div>
+            </section>
         </div>
         <span class="status"><span class="dot"></span><span data-status>loading JSAC model</span></span>
     </div>
@@ -1043,6 +1149,7 @@ class LiveRunJsacLab extends HTMLElement {
     _applyPreset(name) {
         const presets = {
             balanced: {
+                seed: 211,
                 B: 4,
                 my: 2,
                 mg: 3,
@@ -1055,34 +1162,37 @@ class LiveRunJsacLab extends HTMLElement {
                 ],
             },
             sensing: {
+                seed: 347,
                 B: 4,
                 my: 2,
                 mg: 3,
-                blue: [[42, 48], [102, 86], [160, 128], [96, 178]],
-                rx: [
-                    [91, 80], [34, 66], [56, 42], [35, 32], [62, 58],
-                    [151, 120], [92, 100], [114, 78], [91, 68], [116, 96],
-                    [101, 92], [172, 144], [176, 118], [148, 112], [166, 136],
-                    [84, 160], [110, 168], [108, 190], [81, 190], [96, 160],
+                blue: [[46, 54], [98, 92], [151, 72], [176, 153]],
+                offsets: [
+                    [[18, -7], [-16, 13], [9, 10], [-11, -9], [2, 17]],
+                    [[-18, -8], [17, 12], [12, -10], [-10, 9], [3, 16]],
+                    [[-17, 12], [16, -12], [12, 8], [-13, -7], [4, 15]],
+                    [[-18, -10], [16, 11], [11, -8], [-12, 8], [2, 16]],
                 ],
             },
             crowded: {
+                seed: 503,
                 B: 5,
                 my: 2,
                 mg: 2,
-                blue: [[48, 55], [78, 118], [116, 74], [150, 132], [188, 76]],
+                blue: [[46, 58], [76, 132], [116, 84], [150, 142], [188, 84]],
                 offsets: [
-                    [[11, -7], [-9, 9], [13, 8], [-12, -6]],
-                    [[-11, -9], [9, 11], [14, -4], [-12, 8]],
-                    [[-9, 10], [11, -8], [13, 7], [-14, -5]],
-                    [[-10, -8], [10, 10], [12, -7], [-13, 6]],
-                    [[-10, 8], [9, -10], [12, 6], [-12, -7]],
+                    [[12, -7], [-10, 10], [13, 8], [-12, -6]],
+                    [[-12, -9], [10, 12], [13, -5], [-12, 8]],
+                    [[-10, 11], [12, -9], [13, 7], [-14, -5]],
+                    [[-11, -8], [10, 11], [12, -8], [-13, 7]],
+                    [[-11, 9], [10, -11], [12, 6], [-12, -8]],
                 ],
             },
         };
         const preset = presets[name] || presets.balanced;
         const field = this._fieldLength();
         this._captureTransitionStart();
+        if (Number.isFinite(preset.seed)) this.seed = preset.seed;
         this.B = preset.B;
         this.my = preset.my;
         this.mg = preset.mg;
