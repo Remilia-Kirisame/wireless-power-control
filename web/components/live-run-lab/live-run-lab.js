@@ -487,7 +487,7 @@ TEMPLATE.innerHTML = /* html */ `
             width: 0%;
             transition: width var(--dur-mid) var(--ease);
         }
-        .layer-trace, .trace-section + .trace-section {
+        .trace-section + .trace-section {
             margin-top: 14px;
             padding-top: 12px;
             border-top: 1px dashed var(--rule);
@@ -734,7 +734,7 @@ TEMPLATE.innerHTML = /* html */ `
         <div>
             <span class="eyebrow">INTERACTIVE - live browser inference</span>
             <div class="title" data-title>Draw the D2D interference channel and compare WMMSE, GNN, and Greedy.</div>
-            <div class="sub" data-sub>Drag any transmitter or receiver. The browser rebuilds the graph, runs the exported D2D GNN, runs live WMMSE, and recomputes SINR plus sum-rate for the current geometry.</div>
+            <div class="sub" data-sub>Drag any transmitter or receiver to rebuild the graph.</div>
         </div>
         <div class="mode-tabs" aria-label="Scenario mode">
             <button type="button" class="is-active" data-mode="d2d">D2D</button>
@@ -1115,9 +1115,6 @@ class LiveRunLab extends HTMLElement {
             this._fading = null;
             this._scheduleCompute(0);
         });
-        this.shadowRoot.querySelectorAll('[data-preset]').forEach((btn) => {
-            this._bindActionButton(btn, () => this._applyPreset(btn.dataset.preset));
-        });
         this.shadowRoot.querySelectorAll('[data-diagnostic-tab]').forEach((btn) => {
             btn.addEventListener('click', () => this._setDiagnostic(btn.dataset.diagnosticTab));
         });
@@ -1240,10 +1237,10 @@ class LiveRunLab extends HTMLElement {
         });
         if (this.mode === 'jsac') {
             this.$title.textContent = 'Draw Blue-car JSAC clusters and compare WMMSE, GNN, and Naive.';
-            this.$sub.textContent = 'Drag Blue transmitters or Yellow/Green receivers to rebuilds the graph.';
+            this.$sub.textContent = 'Drag Blue transmitters or Yellow/Green receivers to rebuild the graph.';
         } else {
             this.$title.textContent = 'Draw the D2D interference channel and compare WMMSE, GNN, and Greedy.';
-            this.$sub.textContent = 'Drag any transmitter or receiver to rebuilds the graph.';
+            this.$sub.textContent = 'Drag any transmitter or receiver to rebuild the graph.';
         }
     }
 

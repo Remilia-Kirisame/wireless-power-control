@@ -592,7 +592,7 @@ JSAC_TEMPLATE.innerHTML = /* html */ `
             background: var(--mini-color, var(--c-orange));
             transition: height var(--dur-mid) var(--ease);
         }
-        .layer-trace, .trace-section + .trace-section {
+        .trace-section + .trace-section {
             margin-top: 14px;
             padding-top: 12px;
             border-top: 1px dashed var(--rule);
@@ -1212,9 +1212,6 @@ class LiveRunJsacLab extends HTMLElement {
             this.seed += 103;
             this._channelRandoms = null;
             this._scheduleCompute(0);
-        });
-        this.shadowRoot.querySelectorAll('[data-preset]').forEach((btn) => {
-            this._bindActionButton(btn, () => this._applyPreset(btn.dataset.preset));
         });
         this.shadowRoot.querySelectorAll('[data-diagnostic-tab]').forEach((btn) => {
             btn.addEventListener('click', () => this._setDiagnostic(btn.dataset.diagnosticTab));
