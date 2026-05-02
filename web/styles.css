@@ -693,12 +693,17 @@ figcaption .tag {
 body {
     --sidebar-w: 240px;
     padding-left: var(--sidebar-w);
+    /* Sidebar toggle: smooth layout shift in sync with sidebar transform. */
+    transition: padding-left 360ms var(--ease);
 }
 
 .sidebar {
     position: fixed;
     top: 0; left: 0;
-    width: var(--sidebar-w);
+    /* Width is fixed at 240px (the desktop shell). --sidebar-w controls only
+     * body's padding-left, so collapsing sets --sidebar-w to 0 without
+     * shrinking the sidebar (which would leave a padding+border sliver). */
+    width: 240px;
     height: 100vh;
     background: var(--bg);
     border-right: 1px solid var(--rule-soft);
@@ -707,10 +712,57 @@ body {
     padding: 28px 14px 20px;
     z-index: 100;
     transform: translateX(-100%);
-    transition: transform 360ms var(--ease) 120ms;
+    transition: transform 360ms var(--ease);
 }
 body.is-loaded .sidebar { transform: translateX(0); }
+body.is-sidebar-collapsed { --sidebar-w: 0px; }
+body.is-sidebar-collapsed .sidebar { transform: translateX(-100%); }
 
+/* -------- Sidebar toggle button (v1.4) --------
+ * Fixed top-left of the viewport, sits above the sidebar (z=200) so it stays
+ * clickable in both states. Chevron rotates 180deg to flip direction.
+ * The sidebar logo gets extra top breathing room so it doesn't sit under
+ * the button when expanded.
+ */
+.sidebar-toggle {
+    position: fixed;
+    top: 14px;
+    left: 14px;
+    z-index: 200;
+    width: 32px;
+    height: 32px;
+    display: grid;
+    place-items: center;
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+    color: var(--text-dim);
+    cursor: pointer;
+    padding: 0;
+    opacity: 0;
+    transition: background var(--dur-fast) var(--ease),
+                color var(--dur-fast) var(--ease),
+                border-color var(--dur-fast) var(--ease),
+                opacity 280ms var(--ease) 360ms;
+}
+body.is-loaded .sidebar-toggle { opacity: 1; }
+.sidebar-toggle:hover {
+    background: var(--surface-2);
+    color: var(--text);
+    border-color: var(--chrome);
+}
+.sidebar-toggle:focus-visible {
+    outline: 2px solid var(--c-orange);
+    outline-offset: 2px;
+}
+.sidebar-toggle svg {
+    width: 14px;
+    height: 14px;
+    transition: transform var(--dur-mid) var(--ease);
+}
+body.is-sidebar-collapsed .sidebar-toggle svg { transform: rotate(180deg); }
+
+.sidebar-head { padding-top: 28px; /* clear the toggle button */ }
 .sidebar-head .logo {
     font-family: var(--font-mono);
     font-size: 10px;
@@ -829,6 +881,13 @@ body.is-loaded .view-home .anchor-nav {
         transform: translateY(-100%);
     }
     body.is-loaded .sidebar { transform: translateY(0); }
+    /* Toggle is desktop-only; on mobile the sidebar is already a top bar.
+     * Also neutralise any persisted is-sidebar-collapsed class so the bar
+     * still shows when a desktop user resizes down. */
+    .sidebar-toggle { display: none; }
+    body.is-sidebar-collapsed { padding-top: 56px; }
+    body.is-sidebar-collapsed.is-loaded .sidebar { transform: translateY(0); }
+    .sidebar-head { padding-top: 0; }
     .sidebar-head .logo { padding: 0 6px; border-bottom: none; font-size: 9px; white-space: nowrap; }
     .sidebar-head .logo br { display: none; }
     .tab-nav {
@@ -857,7 +916,11 @@ body.is-loaded .view-home .anchor-nav {
 /* -------- Reduced motion — overlay + transitions off -------- */
 @media (prefers-reduced-motion: reduce) {
     .entry-overlay { display: none !important; }
-    .sidebar { transform: none !important; transition: none !important; }
+    .sidebar { transition: none !important; }
+    body.is-loaded .sidebar { transform: translateX(0) !important; }
+    body.is-sidebar-collapsed .sidebar { transform: translateX(-100%) !important; }
+    body { transition: none !important; }
+    .sidebar-toggle, .sidebar-toggle svg { transition: none !important; }
     .view-home .hero-body,
     .view-home .anchor-nav { opacity: 1; transform: none; transition: none; }
     .view { transition: none !important; }

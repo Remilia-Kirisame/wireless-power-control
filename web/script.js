@@ -150,6 +150,42 @@ function initSiteMeta() {
 }
 
 // --------------------------------------------------------------------
+// Sidebar toggle — collapse/expand the side rail, persist to localStorage.
+// Default state is expanded; mobile (≤860px) ignores the class via CSS.
+// --------------------------------------------------------------------
+const SIDEBAR_STORAGE_KEY = 'wpc:sidebar-collapsed';
+
+function readSidebarCollapsed() {
+    try { return localStorage.getItem(SIDEBAR_STORAGE_KEY) === '1'; }
+    catch (_) { return false; }
+}
+
+function writeSidebarCollapsed(collapsed) {
+    try { localStorage.setItem(SIDEBAR_STORAGE_KEY, collapsed ? '1' : '0'); }
+    catch (_) { /* private mode / disabled storage — silently ignore */ }
+}
+
+function applySidebarState(collapsed, btn) {
+    document.body.classList.toggle('is-sidebar-collapsed', collapsed);
+    if (!btn) return;
+    btn.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+    const label = collapsed ? 'Expand sidebar' : 'Collapse sidebar';
+    btn.setAttribute('aria-label', label);
+    btn.setAttribute('title', label);
+}
+
+function initSidebarToggle() {
+    const btn = document.querySelector('.sidebar-toggle');
+    if (!btn) return;
+    applySidebarState(readSidebarCollapsed(), btn);
+    btn.addEventListener('click', () => {
+        const next = !document.body.classList.contains('is-sidebar-collapsed');
+        applySidebarState(next, btn);
+        writeSidebarCollapsed(next);
+    });
+}
+
+// --------------------------------------------------------------------
 // Live readout in the sidebar — cycle through a few real-ish samples.
 // --------------------------------------------------------------------
 function initLiveReadout() {
@@ -170,5 +206,6 @@ document.addEventListener('DOMContentLoaded', () => {
     initSiteMeta();
     initEntry();
     initRouter();
+    initSidebarToggle();
     initLiveReadout();
 });
