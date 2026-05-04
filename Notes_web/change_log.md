@@ -17,3 +17,4 @@ future changes logged below.
   Latency pills are normalized for demonstration: WMMSE/Greedy are live JS elapsed, while GNN is mapped from live WMMSE time using D2D benchmark ratios. Raw browser time is available in the tooltip; this is not a fair runtime benchmark.
 - **v1.1.2** — D2D Live Run signal motion.
   D2D direct links now pulse from Tx to Rx with power-weighted packets, compact blue Tx/orange Rx power glows, focused leakage paths, and smoother stale-to-solved transitions.
+- **v1.2.0** — JSAC Live Run signal motion. Blue-to-Green data packets, Blue-to-Yellow radar sweeps, focused interference leakage, smooth Yellow scan pulses, sector radar fan, receiver glows, and Green packet arrivals make the JSAC map feel live.

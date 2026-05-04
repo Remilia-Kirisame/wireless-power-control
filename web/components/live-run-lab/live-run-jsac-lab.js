@@ -1,3 +1,12 @@
+import {
+    JSAC_SIGNAL_ANIMATION_STYLES,
+    appendJSACHeatFocus,
+    appendJSACInterferenceLayers,
+    appendJSACNodeEnergyGlows,
+    appendJSACScanNodeOverlays,
+    appendJSACSignalLayers,
+} from './jsac-signal-animation.js?v=1.2.0';
+
 /* <live-run-jsac-lab> - JSAC browser inference playground.
  *
  * Stage 2 scope:
@@ -728,6 +737,7 @@ JSAC_TEMPLATE.innerHTML = /* html */ `
             border-radius: 7px;
             background: rgba(255,255,255,0.025);
         }
+${JSAC_SIGNAL_ANIMATION_STYLES}
         .trace-stats {
             display: grid;
             gap: 7px;
@@ -736,15 +746,6 @@ JSAC_TEMPLATE.innerHTML = /* html */ `
             font-size: 10px;
             color: var(--text-dim);
             font-variant-numeric: tabular-nums;
-        }
-        .message-edge {
-            animation: messagePulse 1.6s linear infinite;
-            animation-delay: var(--edge-delay, 0s);
-        }
-        @keyframes messagePulse {
-            0% { stroke-dashoffset: 0; opacity: 0.16; }
-            45% { opacity: 0.6; }
-            100% { stroke-dashoffset: -15; opacity: 0.16; }
         }
         .heat svg {
             width: 100%;
@@ -771,15 +772,8 @@ JSAC_TEMPLATE.innerHTML = /* html */ `
             stroke: rgba(255,255,255,0.76);
             stroke-width: 1;
         }
-        .heat-focus-line {
-            animation: focusPulse 1.1s ease-in-out infinite;
-        }
         .constraint-alert {
             animation: alertPulse 1.25s ease-in-out infinite;
-        }
-        @keyframes focusPulse {
-            0%, 100% { opacity: 0.48; }
-            50% { opacity: 0.95; }
         }
         @keyframes alertPulse {
             0%, 100% { opacity: 0.52; stroke-width: 1.2; }
@@ -1129,6 +1123,8 @@ class LiveRunJsacLab extends HTMLElement {
         this.visualGroupUtil = null;
         this.allocationGroup = null;
         this.allocationAnimationFrame = 0;
+        this.fieldAnimationFrame = 0;
+        this.lastFieldAnimationAt = 0;
         this.visualAllocationPower = null;
         this.activeDiagnostic = 'power';
         this.drawerCollapsed = false;
@@ -1165,7 +1161,32 @@ class LiveRunJsacLab extends HTMLElement {
         this._randomizeLayout(false);
         this._bindDrag();
         this._draw();
+        this._startFieldAnimation();
         this._load();
+    }
+
+    disconnectedCallback() {
+        if (this.fieldAnimationFrame) {
+            window.cancelAnimationFrame(this.fieldAnimationFrame);
+            this.fieldAnimationFrame = 0;
+        }
+    }
+
+    _startFieldAnimation() {
+        if (this.fieldAnimationFrame) return;
+        const tick = (now) => {
+            this.fieldAnimationFrame = 0;
+            const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+            const frameInterval = 15;
+            const due = now - this.lastFieldAnimationAt > frameInterval;
+            const visible = document.visibilityState !== 'hidden';
+            if (this.isConnected && visible && !this.hidden && !reduceMotion && !this.drag && due) {
+                this.lastFieldAnimationAt = now;
+                this._drawField();
+            }
+            if (this.isConnected) this.fieldAnimationFrame = window.requestAnimationFrame(tick);
+        };
+        this.fieldAnimationFrame = window.requestAnimationFrame(tick);
     }
 
     _initControls() {
@@ -2559,6 +2580,23 @@ class LiveRunJsacLab extends HTMLElement {
         const meta = this.last?.meta || this._metadata();
         const losses = this._hasCurrentLosses() ? this.last.losses : null;
         const focusGroup = this.selected ? this._focusedGroup() : null;
+        const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        const signalSettling = Boolean(this.drag) || !losses;
+        const signalState = {
+            blue: this.blue,
+            rx: this.rx,
+            meta,
+            power,
+            method,
+            losses,
+            field,
+            focusGroup,
+            hoverEdge: this.hoverEdge,
+            sinrMin: this.manifest?.physics?.sinr_min,
+            reduceMotion,
+            isSettling: signalSettling,
+            now: performance.now(),
+        };
 
         svg.appendChild(svgEl('rect', { x: 0, y: 0, width: field, height: field, fill: 'rgba(255,255,255,0.015)' }));
         const gridStep = 25;
@@ -2567,89 +2605,14 @@ class LiveRunJsacLab extends HTMLElement {
             svg.appendChild(svgEl('line', { x1: 0, y1: g, x2: field, y2: g, stroke: 'rgba(255,255,255,0.04)', 'stroke-width': 0.35 }));
         }
 
-        if (losses) {
-            const edges = [];
-            for (let target = 0; target < meta.k; target++) {
-                for (let source = 0; source < meta.k; source++) {
-                    if (!meta.interfMask[target][source]) continue;
-                    edges.push({ target, source, score: losses[target][source] * (power[source] || 0) });
-                }
-            }
-            edges.sort((a, b) => b.score - a.score);
-            const maxScore = edges[0]?.score || 1;
-            edges.slice(0, Math.min(90, edges.length)).forEach((e, n) => {
-                const tx = this.blue[meta.groupIds[e.source]];
-                const rx = this.rx[e.target];
-                const related = focusGroup === null || meta.groupIds[e.source] === focusGroup || rx.blue === focusGroup;
-                const op = clamp(0.07 + 0.36 * Math.sqrt(e.score / (maxScore + JSAC_EPS)), 0.07, 0.43) * (related ? 1 : 0.28);
-                svg.appendChild(svgEl('line', {
-                    class: 'message-edge',
-                    x1: tx.x,
-                    y1: tx.y,
-                    x2: rx.x,
-                    y2: rx.y,
-                    stroke: `rgba(160,170,180,${op})`,
-                    'stroke-width': 0.55,
-                    'stroke-dasharray': '2 2.6',
-                    style: `--edge-delay:${(n % 8) * 0.08}s`,
-                }));
-            });
-        }
-
-        if (this.hoverEdge && meta.groupIds[this.hoverEdge.source] !== undefined) {
-            const tx = this.blue[meta.groupIds[this.hoverEdge.source]];
-            const rx = this.rx[this.hoverEdge.target];
-            if (tx && rx) {
-                svg.appendChild(svgEl('line', {
-                    class: 'heat-focus-line',
-                    x1: tx.x,
-                    y1: tx.y,
-                    x2: rx.x,
-                    y2: rx.y,
-                    stroke: 'rgba(255,255,255,0.92)',
-                    'stroke-width': 1.35,
-                    'stroke-dasharray': '3 2',
-                }));
-                svg.appendChild(svgEl('circle', {
-                    cx: rx.x,
-                    cy: rx.y,
-                    r: 6.8,
-                    fill: 'none',
-                    stroke: 'rgba(255,255,255,0.75)',
-                    'stroke-width': 1.1,
-                }));
-            }
-        }
-
-        for (let i = 0; i < meta.k; i++) {
-            const rx = this.rx[i];
-            const tx = this.blue[rx.blue];
-            const isYellow = rx.type === 'yellow';
-            const color = isYellow ? '246,196,69' : '76,175,80';
-            const p = power[i] || 0;
-            const groupOpacity = focusGroup === null || rx.blue === focusGroup ? 1 : 0.22;
-            svg.appendChild(svgEl('line', {
-                x1: tx.x,
-                y1: tx.y,
-                x2: rx.x,
-                y2: rx.y,
-                stroke: `rgba(${color},${(0.22 + p * 0.66) * groupOpacity})`,
-                'stroke-width': 0.55 + p * 1.45,
-            }));
-        }
+        appendJSACInterferenceLayers(svg, signalState);
+        appendJSACSignalLayers(svg, signalState);
+        appendJSACHeatFocus(svg, signalState);
+        appendJSACNodeEnergyGlows(svg, signalState);
 
         for (let b = 0; b < this.B; b++) {
-            const util = method?.groupUtil?.[b]?.total || 0;
             const blue = this.blue[b];
             const groupOpacity = focusGroup === null || b === focusGroup ? 1 : 0.24;
-            svg.appendChild(svgEl('circle', {
-                cx: blue.x,
-                cy: blue.y,
-                r: 4.4 + util * 2.4,
-                fill: `rgba(77,163,255,${(0.08 + util * 0.16) * groupOpacity})`,
-                stroke: 'none',
-                'pointer-events': 'none',
-            }));
             const group = svgEl('g', { class: 'node', 'data-kind': 'blue', 'data-index': b, 'aria-label': `Blue car ${b}`, opacity: groupOpacity });
             group.appendChild(svgEl('rect', { x: blue.x - 2.9, y: blue.y - 2.9, width: 5.8, height: 5.8, rx: 0.9, fill: 'var(--c-blue)', opacity: 0.95 }));
             group.appendChild(svgEl('text', { class: 'node-label', x: blue.x + 4.1, y: blue.y + 1.2 }));
@@ -2662,19 +2625,8 @@ class LiveRunJsacLab extends HTMLElement {
             const isYellow = rx.type === 'yellow';
             const badYellow = Boolean(isYellow && method && method.sinr[i] < this.manifest.physics.sinr_min);
             const fill = isYellow ? 'var(--c-yellow)' : 'var(--c-green)';
-            const p = clamp(power[i] || 0, 0, 1);
             const groupOpacity = focusGroup === null || rx.blue === focusGroup ? 1 : 0.24;
             const group = svgEl('g', { class: 'node', 'data-kind': 'rx', 'data-index': i, 'aria-label': `${isYellow ? 'Yellow' : 'Green'} receiver ${i}`, opacity: groupOpacity });
-            if (p > 0.08) {
-                group.appendChild(svgEl('circle', {
-                    cx: rx.x,
-                    cy: rx.y,
-                    r: 3.3 + p * 4.6,
-                    fill: isYellow ? 'rgba(246,196,69,0.24)' : 'rgba(76,175,80,0.24)',
-                    stroke: 'none',
-                    'pointer-events': 'none',
-                }));
-            }
             if (badYellow) {
                 group.appendChild(svgEl('circle', { class: 'constraint-alert', cx: rx.x, cy: rx.y, r: 4.6, fill: 'none', stroke: 'rgba(255,99,99,0.95)', 'stroke-width': 1.2 }));
             }
@@ -2684,6 +2636,7 @@ class LiveRunJsacLab extends HTMLElement {
             svg.appendChild(group);
         }
 
+        appendJSACScanNodeOverlays(svg, signalState);
         this._drawSelectedText(meta, method);
     }
 

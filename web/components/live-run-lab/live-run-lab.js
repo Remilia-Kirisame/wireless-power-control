@@ -3,8 +3,8 @@ import {
     appendD2DNodePowerGlows,
     appendD2DSignalLayers,
     describeD2DSelection,
-} from './d2d-signal-animation.js?v=1.1.2';
-import './live-run-jsac-lab.js?v=1.1.2';
+} from './d2d-signal-animation.js?v=1.2.0';
+import './live-run-jsac-lab.js?v=1.2.0';
 
 /* <live-run-lab> - Live Run browser inference playground.
  *
