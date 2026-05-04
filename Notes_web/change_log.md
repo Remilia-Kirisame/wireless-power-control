@@ -15,3 +15,5 @@ future changes logged below.
   compact intro, map-aligned rail, animated JSAC selected-group allocation, click-empty focus exit, D2D/JSAC heatmap linking, compact JSAC power glows, and compact solver drawer.
 - **v1.1.1** — Live Run normalized demo latency.
   Latency pills are normalized for demonstration: WMMSE/Greedy are live JS elapsed, while GNN is mapped from live WMMSE time using D2D benchmark ratios. Raw browser time is available in the tooltip; this is not a fair runtime benchmark.
+- **v1.1.2** — D2D Live Run signal motion.
+  D2D direct links now pulse from Tx to Rx with power-weighted packets, compact blue Tx/orange Rx power glows, focused leakage paths, and smoother stale-to-solved transitions.

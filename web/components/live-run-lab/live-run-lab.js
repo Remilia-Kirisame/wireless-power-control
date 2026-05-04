@@ -1,4 +1,10 @@
-import './live-run-jsac-lab.js?v=1.1.1';
+import {
+    D2D_SIGNAL_ANIMATION_STYLES,
+    appendD2DNodePowerGlows,
+    appendD2DSignalLayers,
+    describeD2DSelection,
+} from './d2d-signal-animation.js?v=1.1.2';
+import './live-run-jsac-lab.js?v=1.1.2';
 
 /* <live-run-lab> - Live Run browser inference playground.
  *
@@ -359,12 +365,13 @@ TEMPLATE.innerHTML = /* html */ `
         .legend-mark.halo::before {
             content: "";
             position: absolute;
-            left: 4px;
-            top: -1px;
-            width: 13px;
-            height: 13px;
+            left: 1px;
+            top: 1px;
+            width: 12px;
+            height: 12px;
             border-radius: 50%;
-            border: 3px solid rgba(255,106,61,0.5);
+            background: rgba(77,163,255,0.34);
+            box-shadow: 10px 1px 0 rgba(255,106,61,0.34);
         }
         .status {
             font-family: var(--font-mono);
@@ -659,22 +666,7 @@ TEMPLATE.innerHTML = /* html */ `
             color: var(--text-dim);
             font-variant-numeric: tabular-nums;
         }
-        .message-edge {
-            animation: messagePulse 1.6s linear infinite;
-            animation-delay: var(--edge-delay, 0s);
-        }
-        @keyframes messagePulse {
-            0% { stroke-dashoffset: 0; opacity: 0.18; }
-            45% { opacity: 0.62; }
-            100% { stroke-dashoffset: -26; opacity: 0.18; }
-        }
-        .heat-focus-line {
-            animation: focusPulse 1.1s ease-in-out infinite;
-        }
-        @keyframes focusPulse {
-            0%, 100% { opacity: 0.48; }
-            50% { opacity: 0.95; }
-        }
+${D2D_SIGNAL_ANIMATION_STYLES}
         .heat svg {
             width: 100%;
             max-height: 360px;
@@ -795,7 +787,7 @@ TEMPLATE.innerHTML = /* html */ `
                 <div class="field-legend-title">Map legend</div>
                 <div class="legend-row"><span class="legend-mark tx"></span><span>Transmitter</span></div>
                 <div class="legend-row"><span class="legend-mark rx"></span><span>Receiver</span></div>
-                <div class="legend-row"><span class="legend-mark link"></span><span>Direct link</span></div>
+                <div class="legend-row"><span class="legend-mark link"></span><span>Direct signal</span></div>
                 <div class="legend-row"><span class="legend-mark interference"></span><span>Interference</span></div>
                 <div class="legend-row"><span class="legend-mark halo"></span><span>Allocated power</span></div>
             </div>
@@ -1042,6 +1034,7 @@ class LiveRunLab extends HTMLElement {
         this.activeDiagnostic = 'history';
         this.drawerCollapsed = false;
         this.hoverEdge = null;
+        this.signalDirty = false;
 
         this.$field = this.shadowRoot.querySelector('[data-field]');
         this.$heat = this.shadowRoot.querySelector('[data-heat]');
@@ -1220,6 +1213,7 @@ class LiveRunLab extends HTMLElement {
         this.history = [];
         this.historyAnimationMode = 'idle';
         this._fading = null;
+        this.signalDirty = true;
         this.computeTicket++;
         window.clearTimeout(this.pendingCompute);
         this._draw();
@@ -1343,6 +1337,7 @@ class LiveRunLab extends HTMLElement {
         this.historyAnimationMode = 'idle';
         if (this.$presetSelect) this.$presetSelect.value = 'custom';
         this.computeTicket++;
+        this.signalDirty = true;
         window.clearTimeout(this.pendingCompute);
         this.tx = [];
         this.rx = [];
@@ -1422,6 +1417,7 @@ class LiveRunLab extends HTMLElement {
         this.history = [];
         this.historyAnimationMode = 'idle';
         this._fading = null;
+        this.signalDirty = true;
         this.computeTicket++;
         window.clearTimeout(this.pendingCompute);
         this._draw();
@@ -1553,6 +1549,7 @@ class LiveRunLab extends HTMLElement {
         const fromResults = this.transitionFromResults || this.displayResults || this.results || methods;
         this.results = methods;
         this.transitionFromResults = null;
+        this.signalDirty = false;
         this._appendHistory(methods);
         this._startResultAnimation(fromResults, methods);
     }
@@ -1892,13 +1889,25 @@ class LiveRunLab extends HTMLElement {
 
     _scheduleCompute(delay = 70) {
         window.clearTimeout(this.pendingCompute);
-        this.pendingCompute = window.setTimeout(() => this._computeAll(), delay);
+        const shouldRefreshField = !this.signalDirty;
+        this.signalDirty = true;
+        if (shouldRefreshField && this.$field && this.tx && this.rx) this._drawField();
+        this.pendingCompute = window.setTimeout(() => {
+            this.pendingCompute = 0;
+            this._computeAll();
+        }, delay);
     }
 
     _bindDrag() {
         this.$field.addEventListener('pointerdown', (ev) => {
             const node = ev.target.closest?.('.node');
-            if (!node) return;
+            if (!node) {
+                if (ev.button === undefined || ev.button === 0) {
+                    this.selected = null;
+                    this._draw();
+                }
+                return;
+            }
             const kind = node.dataset.kind;
             const index = Number(node.dataset.index);
             const point = this._fieldPointFromEvent(ev);
@@ -1921,6 +1930,7 @@ class LiveRunLab extends HTMLElement {
             this._moveFromEvent(ev);
         });
         this.$field.addEventListener('pointerup', (ev) => {
+            if (!this.drag) return;
             this.drag?.el?.classList.remove('is-dragging');
             this.drag = null;
             this._scheduleCompute(0);
@@ -1947,6 +1957,7 @@ class LiveRunLab extends HTMLElement {
         const y = clamp(point.y + (this.drag.offsetY || 0), 0, field);
         const arr = this.drag.kind === 'tx' ? this.tx : this.rx;
         arr[this.drag.index] = { x, y };
+        this.signalDirty = true;
         this._draw();
         this._scheduleCompute();
     }
@@ -1973,6 +1984,9 @@ class LiveRunLab extends HTMLElement {
         const field = this._fieldLength();
         const p = this._selectedPower();
         const losses = this._hasCurrentLosses() ? this.last.losses : null;
+        const display = this._displaySource()?.[this.selectedMethod];
+        const signalSettling = this.signalDirty || Boolean(this.drag) || !losses;
+        const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
         const bg = svgEl('rect', { x: 0, y: 0, width: field, height: field, fill: 'rgba(255,255,255,0.015)' });
         svg.appendChild(bg);
@@ -1981,78 +1995,30 @@ class LiveRunLab extends HTMLElement {
             svg.appendChild(svgEl('line', { x1: 0, y1: g, x2: field, y2: g, stroke: 'rgba(255,255,255,0.035)', 'stroke-width': 1 }));
         }
 
-        if (losses) {
-            const edges = [];
-            for (let target = 0; target < this.k; target++) {
-                for (let source = 0; source < this.k; source++) {
-                    if (target === source) continue;
-                    edges.push({ target, source, score: losses[target][source] * (p[source] || 0) });
-                }
-            }
-            edges.sort((a, b) => b.score - a.score);
-            const maxScore = edges[0]?.score || 1;
-            edges.slice(0, Math.min(70, edges.length)).forEach((e, n) => {
-                const op = clamp(0.08 + 0.38 * Math.sqrt(e.score / (maxScore + EPS)), 0.08, 0.46);
-                svg.appendChild(svgEl('line', {
-                    class: 'message-edge',
-                    x1: this.tx[e.source].x,
-                    y1: this.tx[e.source].y,
-                    x2: this.rx[e.target].x,
-                    y2: this.rx[e.target].y,
-                    stroke: 'rgba(77,163,255,' + op + ')',
-                    'stroke-width': 1.4,
-                    'stroke-dasharray': '5 8',
-                    style: `--edge-delay:${(n % 8) * 0.08}s`,
-                }));
-            });
-        }
+        appendD2DSignalLayers(svg, {
+            tx: this.tx,
+            rx: this.rx,
+            k: this.k,
+            power: p,
+            rates: display?.rates || [],
+            losses,
+            selected: this.selected,
+            hoverEdge: this.hoverEdge,
+            isSettling: signalSettling,
+            reduceMotion,
+            now: performance.now(),
+        });
 
-        if (this.hoverEdge && this.tx[this.hoverEdge.source] && this.rx[this.hoverEdge.target]) {
-            const tx = this.tx[this.hoverEdge.source];
-            const rx = this.rx[this.hoverEdge.target];
-            svg.appendChild(svgEl('line', {
-                class: 'heat-focus-line',
-                x1: tx.x,
-                y1: tx.y,
-                x2: rx.x,
-                y2: rx.y,
-                stroke: 'rgba(255,255,255,0.92)',
-                'stroke-width': 2.6,
-                'stroke-dasharray': '7 5',
-            }));
-            svg.appendChild(svgEl('circle', {
-                cx: rx.x,
-                cy: rx.y,
-                r: 14,
-                fill: 'none',
-                stroke: 'rgba(255,255,255,0.75)',
-                'stroke-width': 2,
-            }));
-        }
+        appendD2DNodePowerGlows(svg, {
+            tx: this.tx,
+            rx: this.rx,
+            k: this.k,
+            power: p,
+            selected: this.selected,
+            isSettling: signalSettling,
+        });
 
         for (let i = 0; i < this.k; i++) {
-            const power = p[i] || 0;
-            svg.appendChild(svgEl('line', {
-                x1: this.tx[i].x,
-                y1: this.tx[i].y,
-                x2: this.rx[i].x,
-                y2: this.rx[i].y,
-                stroke: 'rgba(255,106,61,' + (0.25 + power * 0.65).toFixed(3) + ')',
-                'stroke-width': 2.2,
-            }));
-        }
-
-        for (let i = 0; i < this.k; i++) {
-            const power = p[i] || 0;
-            svg.appendChild(svgEl('circle', {
-                cx: this.tx[i].x,
-                cy: this.tx[i].y,
-                r: 18 + power * 32,
-                fill: 'none',
-                stroke: 'rgba(255,106,61,' + (0.13 + power * 0.42).toFixed(3) + ')',
-                'stroke-width': 5,
-            }));
-
             const rxGroup = svgEl('g', { class: 'node', 'data-kind': 'rx', 'data-index': i, 'aria-label': `Receiver ${i}` });
             rxGroup.appendChild(svgEl('circle', { cx: this.rx[i].x, cy: this.rx[i].y, r: 8.5, fill: 'var(--text)', opacity: 0.86 }));
             rxGroup.appendChild(svgEl('text', { class: 'rx-label', x: this.rx[i].x + 13, y: this.rx[i].y + 5 }));
@@ -2066,13 +2032,14 @@ class LiveRunLab extends HTMLElement {
             svg.appendChild(txGroup);
         }
 
-        if (this.selected) {
-            const arr = this.selected.kind === 'tx' ? this.tx : this.rx;
-            const p0 = arr[this.selected.index];
-            this.$selected.textContent = `${this.selected.kind.toUpperCase()}${this.selected.index} - x ${fmt(p0.x, 1)} m / y ${fmt(p0.y, 1)} m`;
-        } else {
-            this.$selected.textContent = 'Click a node or drag a link endpoint.';
-        }
+        this.$selected.textContent = describeD2DSelection({
+            selected: this.selected,
+            tx: this.tx,
+            rx: this.rx,
+            power: p,
+            rates: display?.rates || [],
+            losses: losses || [],
+        });
     }
 
     _drawMetrics() {
