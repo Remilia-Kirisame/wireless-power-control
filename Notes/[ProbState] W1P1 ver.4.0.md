@@ -143,32 +143,21 @@ We now applied a minimum rate constraint for each user (Transceiver pair) to sec
 
 Ref: paper W4P2
 
-There are there kinds of cars:
+### D2D vs JSAC Comparison Scenario-Level Differences
 
-- Blue car: Service Provider Vehicle - Transmitter (Tx)
-- Yellow car: Sensing Target Veihcle - Receiver (Rx)
-- Green car: Communication Target Vehicle  - Receiver (Rx)
-
-> For W4P2, its problem statement is: "To maximize the data rates of all communication target vehicles while satisfying the sensing service requirement."
->
-> It's allocating the **Links**. For each yellow and green car, it allocates a blue car to create a link (one blue car can serve multiple yellow/green cars, i.e. one Tx to multiple Rx). The objective is to maximize the sum rate of links from Blue to Green. (one of) The constraint is to ensure "The Minimum SINR requirement of the sensing service (Yellow)"
-
-We are going to expand our current D2D power allocation code to this scenario, so we need to modify the statement.
-
-The links are set before hand. There are multiple Tx (Blue) in the field. Each Tx (Blue car) serves multiple Rxs (Yellow and Green). The resource to allocate is now the power that each Tx of one link gets (since one Tx serves multiple Rx, its power for each link can be different). The objective (to maximize the sum rate of links from Blue to Green) and the constraint (The Minimum SINR requirement of the sensing service (Yellow)) remains the same.
-
-It is similar to the base station scenario, what makes it different is now there are two types of Rx. And since now it is downlink (Basestation be Tx), we can assume orthogonal channels used within each Blue car (Tx). That is, there's no interference between the links whose Tx is the same Blue car. For example, there are 5 Blue car (Blue-1, Blue-2, ... , Blue 5), each Blue serving 5 Yellow and 5 Green (50 Rx in total hence 50 links). We assume 10 orthognal channels used, so for link (Blue 1 to Rx 1-1, using channel 1), the only interference is the signal of the other 4 links using channel 1 (i.e. Blue 2 to Rx 2-1, Blue 3 to Rx 3-1, etc.).
-
-Why we can apply D2D codes to this scenario? Answer: we can consider them as Device-to-Device links, despite (for the example above) every 10 Tx are placed in the same spot (since it's the same blue car).
-
-And how do we set up the map (generate the layout)? We first place the Blue cars with the distance between each other is more than a certain value (say 50 meters). And for each blu car, we place the yellow and green cars randomly in the circle of radius 2~20 meters. (values can be changed).
-
-
-
-Mods checklist:
-
-- [ ] Generate Layout
-- [ ] WMMSE new
-- [ ] Pathloss
-- [ ] Power constraint reality
-- [ ] GNN edges pruning for dist==0 (same blue)
+| Dimension                  | D2D (Framework_ver_2.3)                                      | JSAC (Framework_ver_4.0)                                     |
+| -------------------------- | ------------------------------------------------------------ | ------------------------------------------------------------ |
+| **Network topology**       | K independent Tx-Rx pairs, all distinct                      | B Blue cars (Tx), each serving M_y Yellow + M_g Green Rx; K = B×(M_y+M_g) |
+| **Tx co-location**         | All Tx at unique positions                                   | M_y+M_g links share the same physical Tx (same Blue car)     |
+| **Rx types**               | One type (all communication)                                 | Two types: Yellow (sensing target), Green (communication target) |
+| **Interference structure** | All K links mutually interfere (K² channel matrix, all non-zero) | M orthogonal channels per Blue car; only links in **different** groups on the **same channel** interfere → sparse channel matrix |
+| **Objective**              | Max sum-rate over **all K links**                            | Max sum-rate over **Green links only**                       |
+| **Constraint**             | Min rate per link (QoS, v2.3)                                | Min SINR per **Yellow** (sensing) link                       |
+| **Layout structure**       | Uniform random scatter across field                          | Hierarchical: Blue cars spread (≥50m), Rx clustered around their Blue car (2–20m, ≥2m apart within cluster) |
+| **Tx-Rx distance**         | ~50–250m (D2D range)                                         | ~2–20m (short-range vehicular)                               |
+| **Power variable**         | One power value per link, 0 ≤ p_k ≤ Pmax                     | Per-link power under shared budget per Blue car: $\sum_{k \in \text{Blue}_b} p_k ≤ P_{\max}$ |
+| **Path loss model**        | Single ITU-R model for all links                             | Currently single ITU-R for all links (MVP). Triple model (sensing d⁴+RCS, direct d², cross-Blue d² with NLOS shadowing) scheduled in FUTURE_WORKPLAN §1 |
+| **Scaler categories**      | 2 (diagonal / off-diagonal)                                  | 3 (direct-sensing / direct-communication / interference)     |
+| **GNN graph edges**        | Distance-pruned (300m threshold)                             | Interference edges (`interf_mask`) + intra-group edges (for within-Blue coordination) |
+| **GNN output head**        | Sigmoid per-link                                             | Per-group Softmax (enforces ∑ p = Pmax per Blue car)         |
+| **Training loss**          | `sumrate_loss` / `constrained_sumrate_loss` (rate-based QoS) | `constrained_sumrate_loss_jsac` (Green rate + Yellow SINR hinge) |
